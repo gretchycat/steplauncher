@@ -42,16 +42,17 @@ object SysMonUtils {
 
     private val sparklineBlocks = arrayOf(" ", "▂", "▃", "▄", "▅", "▆", "▇", "█")
 
-    private val cpuHistory = mutableListOf<Int>()
-    private val memoryHistory = mutableListOf<Int>()
-    private val storageHistory = mutableListOf<Int>()
-    private val networkHistory = mutableListOf<Int>()
+    val cpuHistory = mutableListOf<Int>()
+    val memoryHistory = mutableListOf<Int>()
+    val storageHistory = mutableListOf<Int>()
+    val rxHistory = mutableListOf<Int>()
+    val txHistory = mutableListOf<Int>()
 
     private var lastRxBytes: Long = TrafficStats.getTotalRxBytes()
     private var lastTxBytes: Long = TrafficStats.getTotalTxBytes()
     private var lastTimeMs: Long = System.currentTimeMillis()
 
-    private fun renderSparkline(history: MutableList<Int>, newValue: Int, maxHistory: Int = 5): String {
+    private fun renderSparkline(history: MutableList<Int>, newValue: Int, maxHistory: Int = 8): String {
         history.add(newValue.coerceIn(0, 100))
         if (history.size > maxHistory) history.removeAt(0)
 
@@ -141,8 +142,16 @@ object SysMonUtils {
         lastTxBytes = currTx
         lastTimeMs = nowMs
 
-        val activityPercent = ((rxKbps + txKbps) / 10).toInt().coerceIn(5, 100)
-        val sparkline = renderSparkline(networkHistory, activityPercent)
+        val rxPercent = (rxKbps / 50).toInt().coerceIn(5, 100)
+        val txPercent = (txKbps / 50).toInt().coerceIn(5, 100)
+
+        rxHistory.add(rxPercent)
+        if (rxHistory.size > 8) rxHistory.removeAt(0)
+
+        txHistory.add(txPercent)
+        if (txHistory.size > 8) txHistory.removeAt(0)
+
+        val sparkline = renderSparkline(mutableListOf(), rxPercent)
 
         var primaryIp = "127.0.0.1"
         val activeIfaces = mutableListOf<String>()
