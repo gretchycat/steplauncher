@@ -12,6 +12,9 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.steplauncher.core.renderer.DockManager
 import com.steplauncher.core.renderer.DockTile
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class DockTileAdapter(
     val tiles: MutableList<DockTile>,
@@ -127,7 +130,16 @@ class DockTileAdapter(
                 holder.itemView.alpha = 0.95f
             }
             is DockTile.InternalDockApp -> {
-                holder.tvSubtitle.text = tile.moduleType
+                if (tile.moduleType.uppercase() == "WMCLOCK") {
+                    val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+                    val dateFmt = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
+                    val now = Date()
+                    holder.tvTitle.text = timeFmt.format(now)
+                    holder.tvSubtitle.text = dateFmt.format(now)
+                    holder.tvIcon.text = "⏰"
+                } else {
+                    holder.tvSubtitle.text = tile.moduleType
+                }
                 holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 1.0f
             }

@@ -91,6 +91,24 @@ class LauncherActivity : AppCompatActivity() {
         refreshDocks()
     }
 
+    private val clockTickerHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val clockTickerRunnable = object : Runnable {
+        override fun run() {
+            refreshDocks()
+            clockTickerHandler.postDelayed(this, 10000)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        clockTickerHandler.post(clockTickerRunnable)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        clockTickerHandler.removeCallbacks(clockTickerRunnable)
+    }
+
     override fun onStart() {
         super.onStart()
         WorkspaceWidgetHostManager.startListening()
@@ -103,6 +121,7 @@ class LauncherActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        clockTickerHandler.removeCallbacks(clockTickerRunnable)
         DockManager.removeChangeListener(dockChangeListener)
     }
 
@@ -340,7 +359,18 @@ class LauncherActivity : AppCompatActivity() {
                 Toast.makeText(this, "VFS Category: ${tile.title}", Toast.LENGTH_SHORT).show()
             }
             is DockTile.InternalDockApp -> {
-                Toast.makeText(this, "Dockapp: ${tile.title} [${tile.moduleType}]", Toast.LENGTH_SHORT).show()
+                if (tile.moduleType.equals("WMCLOCK", ignoreCase = true)) {
+                    val clockApp = com.steplauncher.core.vfs.DefaultAppResolver.resolveClockApp(this)
+                    Toast.makeText(this, "⏰ Opening ${clockApp.label}...", Toast.LENGTH_SHORT).show()
+                    try {
+                        startActivity(clockApp.launchIntent)
+                    } catch (e: Exception) {
+                        Toast.makeText(this, "Unable to launch Clock application", Toast.LENGTH_SHORT).show()
+                    }
+                    DockManager.launchAndAddToRunningStack(clockApp.label, "⏰", clockApp.packageName, clockApp.launchIntent)
+                } else {
+                    Toast.makeText(this, "Dockapp: ${tile.title} [${tile.moduleType}]", Toast.LENGTH_SHORT).show()
+                }
             }
             is DockTile.ExternalDockApp -> {
                 Toast.makeText(this, "External Dockapp: ${tile.title}", Toast.LENGTH_SHORT).show()

@@ -113,6 +113,59 @@ object DefaultAppResolver {
     }
 
     /**
+     * Resolves the default Alarm / Clock application on the device.
+     */
+    fun resolveClockApp(context: Context): ResolvedAppInfo {
+        val intent = Intent(android.provider.AlarmClock.ACTION_SHOW_ALARMS)
+        val pm = context.packageManager
+        val resolveInfo = pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            ?: pm.resolveActivity(intent, 0)
+
+        if (resolveInfo != null) {
+            val pkg = resolveInfo.activityInfo.packageName
+            val label = resolveInfo.loadLabel(pm).toString()
+            val launchIntent = pm.getLaunchIntentForPackage(pkg) ?: intent
+            return ResolvedAppInfo(
+                label = label.ifBlank { "Clock" },
+                packageName = pkg,
+                className = resolveInfo.activityInfo.name,
+                launchIntent = launchIntent,
+                iconSymbol = "⏰"
+            )
+        }
+
+        // Known fallback clock packages
+        val knownClockPackages = listOf(
+            "com.google.android.deskclock",
+            "com.android.deskclock",
+            "com.sec.android.app.clockpackage",
+            "com.asus.clock",
+            "com.coloros.alarmclock",
+            "com.miui.clock"
+        )
+        for (pkg in knownClockPackages) {
+            val launchIntent = pm.getLaunchIntentForPackage(pkg)
+            if (launchIntent != null) {
+                return ResolvedAppInfo(
+                    label = "Clock",
+                    packageName = pkg,
+                    className = null,
+                    launchIntent = launchIntent,
+                    iconSymbol = "⏰"
+                )
+            }
+        }
+
+        return ResolvedAppInfo(
+            label = "Clock",
+            packageName = "com.google.android.deskclock",
+            className = null,
+            launchIntent = Intent(android.provider.AlarmClock.ACTION_SHOW_ALARMS),
+            iconSymbol = "⏰"
+        )
+    }
+
+    /**
      * Scans installed applications and resolves apps belonging to specific categories (e.g. Social, Multimedia).
      */
     fun resolveCategoryApps(context: Context, category: VfsCategory): List<ResolvedAppInfo> {
