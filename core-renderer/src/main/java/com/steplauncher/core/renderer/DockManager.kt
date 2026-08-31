@@ -19,6 +19,8 @@ object DockManager {
     private const val KEY_WORKSPACE_PREFIX = "key_workspace_tiles_"
     private const val KEY_ACCENT_COLOR = "key_accent_color"
     private const val KEY_ATTENTION_COLOR = "key_attention_color"
+    private const val KEY_BADGE_BG_COLOR = "key_badge_bg_color"
+    private const val KEY_BADGE_TEXT_COLOR = "key_badge_text_color"
     private const val KEY_TEXT_COLOR = "key_text_color"
     private const val KEY_GRAPHIC_COLOR = "key_graphic_color"
     private const val KEY_COLOR_HIGH = "key_color_high"
@@ -33,6 +35,8 @@ object DockManager {
     var currentWorkspaceIndex: Int = 0
     var accentColorHex: String = "#FFFFFF"      // Default Frosted White
     var attentionColorHex: String = "#FF3D00"   // Attention Request Tint (Flashing Amber / Neon Red)
+    var badgeBgColorHex: String = "#FF1744"     // Badge Background Color (Red Pill)
+    var badgeTextColorHex: String = "#FFFFFF"   // Badge Text Color (White)
     var textColorHex: String = "#FFFFFF"        // Text Accent Color
     var graphicColorHex: String = "#00E5FF"     // Graphic Accent Color
     var colorHighHex: String = "#FF5252"        // High Threshold Alert Color
@@ -151,6 +155,8 @@ object DockManager {
     fun updateThemeColors(
         accentHex: String = accentColorHex,
         attentionHex: String = attentionColorHex,
+        badgeBgHex: String = badgeBgColorHex,
+        badgeTextHex: String = badgeTextColorHex,
         textHex: String = textColorHex,
         graphicHex: String = graphicColorHex,
         highHex: String = colorHighHex,
@@ -160,6 +166,8 @@ object DockManager {
     ) {
         accentColorHex = accentHex
         attentionColorHex = attentionHex
+        badgeBgColorHex = badgeBgHex
+        badgeTextColorHex = badgeTextHex
         textColorHex = textHex
         graphicColorHex = graphicHex
         colorHighHex = highHex
@@ -169,7 +177,7 @@ object DockManager {
         notifyChanged(context)
     }
 
-    fun requestAttention(tileIdOrPkg: String, context: Context? = null) {
+    fun requestAttention(tileIdOrPkg: String, badgeText: String? = null, context: Context? = null) {
         var found = false
         val allLists = workspaceDocks + listOf(bottomLeftDockTiles, bottomDockTiles)
         allLists.forEach { list ->
@@ -179,6 +187,7 @@ object DockManager {
                         (tile is DockTile.AppShortcut && tile.packageName == tileIdOrPkg)
                 if (matches) {
                     tile.isAttentionRequested = true
+                    tile.attentionBadgeText = badgeText
                     found = true
                 }
             }
@@ -196,9 +205,12 @@ object DockManager {
                 val matches = tile.id == tileIdOrPkg ||
                         (tile is DockTile.RunningTask && tile.packageName == tileIdOrPkg) ||
                         (tile is DockTile.AppShortcut && tile.packageName == tileIdOrPkg)
-                if (matches && tile.isAttentionRequested) {
-                    tile.isAttentionRequested = false
-                    found = true
+                if (matches) {
+                    if (tile.isAttentionRequested || tile.attentionBadgeText != null) {
+                        tile.isAttentionRequested = false
+                        tile.attentionBadgeText = null
+                        found = true
+                    }
                 }
             }
         }
@@ -522,6 +534,8 @@ object DockManager {
             editor.putInt(KEY_NUM_WORKSPACES, workspaceDocks.size)
             editor.putString(KEY_ACCENT_COLOR, accentColorHex)
             editor.putString(KEY_ATTENTION_COLOR, attentionColorHex)
+            editor.putString(KEY_BADGE_BG_COLOR, badgeBgColorHex)
+            editor.putString(KEY_BADGE_TEXT_COLOR, badgeTextColorHex)
             editor.putString(KEY_TEXT_COLOR, textColorHex)
             editor.putString(KEY_GRAPHIC_COLOR, graphicColorHex)
             editor.putString(KEY_COLOR_HIGH, colorHighHex)
@@ -579,6 +593,8 @@ object DockManager {
         val pm = context.packageManager
         accentColorHex = prefs.getString(KEY_ACCENT_COLOR, "#FFFFFF") ?: "#FFFFFF"
         attentionColorHex = prefs.getString(KEY_ATTENTION_COLOR, "#FF3D00") ?: "#FF3D00"
+        badgeBgColorHex = prefs.getString(KEY_BADGE_BG_COLOR, "#FF1744") ?: "#FF1744"
+        badgeTextColorHex = prefs.getString(KEY_BADGE_TEXT_COLOR, "#FFFFFF") ?: "#FFFFFF"
         textColorHex = prefs.getString(KEY_TEXT_COLOR, "#FFFFFF") ?: "#FFFFFF"
         graphicColorHex = prefs.getString(KEY_GRAPHIC_COLOR, "#00E5FF") ?: "#00E5FF"
         colorHighHex = prefs.getString(KEY_COLOR_HIGH, "#FF5252") ?: "#FF5252"

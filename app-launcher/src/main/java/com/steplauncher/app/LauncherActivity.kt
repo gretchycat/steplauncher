@@ -787,8 +787,22 @@ class LauncherActivity : AppCompatActivity() {
                     selected.contains("System App Info") -> openSystemAppInfo(tile)
                     selected.contains("Uninstall Application") -> uninstallApplication(tile)
                     selected.contains("Request Attention") -> {
-                        DockManager.requestAttention(tile.id, this)
-                        Toast.makeText(this, "🔔 Attention requested for ${tile.title}!", Toast.LENGTH_SHORT).show()
+                        val input = android.widget.EditText(this).apply {
+                            hint = "Badge text (e.g. 3, 99+, MSG)"
+                            setPadding(40, 20, 40, 20)
+                        }
+                        MaterialAlertDialogBuilder(this)
+                            .setTitle("🔔 Request Attention & Badge")
+                            .setMessage("Enter badge count/text for ${tile.title}:")
+                            .setView(input)
+                            .setPositiveButton("Set Attention") { _, _ ->
+                                val text = input.text.toString().trim()
+                                val badge = if (text.isNotEmpty()) text else null
+                                DockManager.requestAttention(tile.id, badgeText = badge, context = this)
+                                Toast.makeText(this, "🔔 Attention set (Badge: '${badge ?: "None"}')", Toast.LENGTH_SHORT).show()
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
                     }
                 }
             }

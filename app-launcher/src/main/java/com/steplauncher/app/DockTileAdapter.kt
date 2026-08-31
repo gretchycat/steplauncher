@@ -120,23 +120,18 @@ class DockTileAdapter(
         when (tile) {
             is DockTile.DockAnchor -> {
                 holder.tvSubtitle.text = "Anchor"
-                holder.tvBadge.visibility = View.VISIBLE
-                holder.tvBadge.text = "${DockManager.currentWorkspaceIndex + 1}"
                 holder.itemView.alpha = 1.0f
             }
             is DockTile.AppShortcut -> {
                 holder.tvSubtitle.text = "App"
-                holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 1.0f
             }
             is DockTile.RunningTask -> {
                 holder.tvSubtitle.text = "PID:${tile.processId} ${tile.cpuUsagePercent}%"
-                holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 1.0f
             }
             is DockTile.VfsCategoryLink -> {
                 holder.tvSubtitle.text = "VFS Link"
-                holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 0.95f
             }
             is DockTile.InternalDockApp -> {
@@ -232,19 +227,37 @@ class DockTileAdapter(
                 } else {
                     holder.tvSubtitle.text = tile.moduleType
                 }
-                holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 1.0f
             }
             is DockTile.ExternalDockApp -> {
                 holder.tvSubtitle.text = "Ext DockApp"
-                holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 1.0f
             }
             is DockTile.PlaceholderBox -> {
                 holder.tvSubtitle.text = tile.subtitle
-                holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 0.7f
             }
+        }
+
+        // Notification / Attention Badge & Dock Anchor Badge Handling
+        if (tile.isAttentionRequested && !tile.attentionBadgeText.isNullOrEmpty()) {
+            holder.tvBadge.visibility = View.VISIBLE
+            holder.tvBadge.text = tile.attentionBadgeText
+            try {
+                val bgInt = Color.parseColor(DockManager.badgeBgColorHex)
+                val textInt = Color.parseColor(DockManager.badgeTextColorHex)
+                holder.tvBadge.background?.mutate()?.setTint(bgInt)
+                holder.tvBadge.setTextColor(textInt)
+            } catch (e: Exception) {}
+        } else if (tile is DockTile.DockAnchor) {
+            holder.tvBadge.visibility = View.VISIBLE
+            holder.tvBadge.text = "${DockManager.currentWorkspaceIndex + 1}"
+            try {
+                holder.tvBadge.background?.mutate()?.clearColorFilter()
+                holder.tvBadge.setTextColor(Color.parseColor(DockManager.textColorHex))
+            } catch (e: Exception) {}
+        } else {
+            holder.tvBadge.visibility = View.GONE
         }
 
         com.steplauncher.core.renderer.ForgivingTouchHelper.bind(
