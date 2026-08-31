@@ -152,18 +152,18 @@ object DockManager {
         workspaceDocks.forEach { it.clear() }
 
         // WORKSPACE 1 DEFAULT DOCK
-        workspaceDocks[0].add(DockTile.DockAnchor(id = "dock_anchor_main", title = "Settings", iconSymbol = "⚙️"))
+        workspaceDocks[0].add(DockTile.DockAnchor(id = "dock_anchor_ws1", title = "Workspace 1", iconSymbol = "📎"))
         workspaceDocks[0].add(DockTile.InternalDockApp(id = "wmclock", title = "Clock / Cal", iconSymbol = "⏰", moduleType = "WMCLOCK"))
         workspaceDocks[0].add(DockTile.InternalDockApp(id = "wmbattery", title = "Battery Mon", iconSymbol = "⚡", moduleType = "WMBATTERY"))
         workspaceDocks[0].add(DockTile.InternalDockApp(id = "wmmon", title = "CPU & Net", iconSymbol = "📊", moduleType = "WMMON"))
 
         // WORKSPACE 2 DEFAULT DOCK
-        workspaceDocks[1].add(DockTile.DockAnchor(id = "dock_anchor_ws2", title = "Workspace 2", iconSymbol = "❖"))
+        workspaceDocks[1].add(DockTile.DockAnchor(id = "dock_anchor_ws2", title = "Workspace 2", iconSymbol = "📎"))
         workspaceDocks[1].add(DockTile.VfsCategoryLink(id = "ws2_dev", title = "Development", iconSymbol = "⚡", category = VfsCategory.DEVELOPMENT))
         workspaceDocks[1].add(DockTile.VfsCategoryLink(id = "ws2_prod", title = "Productivity", iconSymbol = "💼", category = VfsCategory.PRODUCTIVITY))
 
         // WORKSPACE 3 DEFAULT DOCK
-        workspaceDocks[2].add(DockTile.DockAnchor(id = "dock_anchor_ws3", title = "Workspace 3", iconSymbol = "❖"))
+        workspaceDocks[2].add(DockTile.DockAnchor(id = "dock_anchor_ws3", title = "Workspace 3", iconSymbol = "📎"))
         workspaceDocks[2].add(DockTile.VfsCategoryLink(id = "ws3_games", title = "Games", iconSymbol = "🎮", category = VfsCategory.MULTIMEDIA))
 
         // 2. BOTTOM LEFT DOCK (Running Tasks Stack - Grows Upwards)

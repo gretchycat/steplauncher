@@ -13,6 +13,7 @@ drawable bg_glass_center_canvas
 drawable bg_glass_dock_rail
 drawable bg_glass_dock_rail_active
 drawable bg_glass_dock_tile
+drawable ic_dock_anchor_paperclip
 drawable ic_launcher
 id btn_back
 id btn_color_amber
@@ -36,6 +37,7 @@ id tv_current_icon_size
 id tv_tile_icon
 id tv_tile_subtitle
 id tv_tile_title
+id tv_tile_workspace_badge
 layout activity_launcher
 layout activity_settings
 layout item_dock_tile

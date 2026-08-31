@@ -3003,6 +3003,7 @@ drawable ic_call_decline
 drawable ic_call_decline_low
 drawable ic_clear_black_24
 drawable ic_clock_black_24dp
+drawable ic_dock_anchor_paperclip
 drawable ic_keyboard_black_24dp
 drawable ic_launcher
 drawable ic_m3_chip_check
@@ -3585,6 +3586,7 @@ id tv_current_icon_size
 id tv_tile_icon
 id tv_tile_subtitle
 id tv_tile_title
+id tv_tile_workspace_badge
 id unchecked
 id uniform
 id unlabeled

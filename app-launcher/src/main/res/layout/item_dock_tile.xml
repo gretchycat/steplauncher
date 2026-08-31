@@ -1,56 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="92dp"
     android:layout_height="92dp"
     android:layout_margin="4dp"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="6dp"
     android:background="@drawable/bg_frosted_glass_tile_base"
     android:clickable="true"
     android:focusable="true">
 
-    <!-- Real Application Graphic Icon (Default 56dp - twice as big) -->
-    <ImageView
-        android:id="@+id/iv_tile_app_icon"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:scaleType="fitCenter"
-        android:visibility="gone" />
-
-    <!-- Text / Emoji Icon Symbol Fallback -->
-    <TextView
-        android:id="@+id/tv_tile_icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="📱"
-        android:textSize="40sp"
-        android:includeFontPadding="false" />
-
-    <!-- Dock Item Title (Bold Format) -->
-    <TextView
-        android:id="@+id/tv_tile_title"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="3dp"
-        android:text="Tile"
-        android:textColor="@color/text_primary"
-        android:textSize="10sp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="6dp">
+
+        <!-- Real Application Graphic Icon (Default 56dp - twice as big) -->
+        <ImageView
+            android:id="@+id/iv_tile_app_icon"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+        <!-- Text / Emoji Icon Symbol Fallback -->
+        <TextView
+            android:id="@+id/tv_tile_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📎"
+            android:textSize="40sp"
+            android:includeFontPadding="false" />
+
+        <!-- Dock Item Title (Bold Format) -->
+        <TextView
+            android:id="@+id/tv_tile_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:text="Workspace 1"
+            android:textColor="@color/text_primary"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <!-- Subtle Dock Item Category / Status -->
+        <TextView
+            android:id="@+id/tv_tile_subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="@color/text_secondary"
+            android:textSize="8sp"
+            android:gravity="center"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+    </LinearLayout>
+
+    <!-- Lower Left Corner Workspace Number Badge -->
+    <TextView
+        android:id="@+id/tv_tile_workspace_badge"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="3dp"
+        android:background="@drawable/bg_glass_dock_rail"
+        android:textColor="@color/cyan_accent"
+        android:textSize="9sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:maxLines="1"
-        android:ellipsize="end" />
+        android:text="1"
+        android:visibility="gone" />
 
-    <!-- Subtle Dock Item Category / Status -->
-    <TextView
-        android:id="@+id/tv_tile_subtitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="App"
-        android:textColor="@color/text_secondary"
-        android:textSize="8sp"
-        android:gravity="center"
-        android:maxLines="1"
-        android:ellipsize="end" />
-
-</LinearLayout>
+</FrameLayout>

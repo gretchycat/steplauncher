@@ -260,6 +260,7 @@ class LauncherActivity : AppCompatActivity() {
         val options = mutableListOf<String>()
 
         if (!isLocked) {
+            options.add("✏️ Edit Title & Icon")
             options.add("📱 Add App Launcher Shortcut")
             options.add("📊 Add System Telemetry DockApp")
             options.add("📁 Add VFS Category Link")
@@ -269,11 +270,14 @@ class LauncherActivity : AppCompatActivity() {
         options.add("ℹ️ About StepLauncher")
         options.add("⚙️ Open Dock Settings")
 
+        val anchorTile = DockManager.getTilesForPosition(targetDock).firstOrNull { it is DockTile.DockAnchor }
+
         MaterialAlertDialogBuilder(this)
-            .setTitle("❖ Workspace ${DockManager.currentWorkspaceIndex + 1} Anchor")
+            .setTitle(anchorTile?.let { "${it.iconSymbol} ${it.title}" } ?: "❖ Workspace Anchor")
             .setItems(options.toTypedArray()) { _, which ->
                 val selected = options[which]
                 when {
+                    selected.contains("Edit Title") && anchorTile != null -> showEditTileDialog(anchorTile)
                     selected.contains("Add App Launcher") -> showAppPickerAddDialog(targetDock)
                     selected.contains("Add System Telemetry") -> showAddTelemetryDockAppDialog(targetDock)
                     selected.contains("Add VFS Category") -> showAddVfsCategoryDialog(targetDock)

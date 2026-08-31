@@ -4,8 +4,8 @@ package com.steplauncher.app.databinding;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,7 +18,7 @@ import java.lang.String;
 
 public final class ItemDockTileBinding implements ViewBinding {
   @NonNull
-  private final LinearLayout rootView;
+  private final FrameLayout rootView;
 
   @NonNull
   public final ImageView ivTileAppIcon;
@@ -32,19 +32,23 @@ public final class ItemDockTileBinding implements ViewBinding {
   @NonNull
   public final TextView tvTileTitle;
 
-  private ItemDockTileBinding(@NonNull LinearLayout rootView, @NonNull ImageView ivTileAppIcon,
-      @NonNull TextView tvTileIcon, @NonNull TextView tvTileSubtitle,
-      @NonNull TextView tvTileTitle) {
+  @NonNull
+  public final TextView tvTileWorkspaceBadge;
+
+  private ItemDockTileBinding(@NonNull FrameLayout rootView, @NonNull ImageView ivTileAppIcon,
+      @NonNull TextView tvTileIcon, @NonNull TextView tvTileSubtitle, @NonNull TextView tvTileTitle,
+      @NonNull TextView tvTileWorkspaceBadge) {
     this.rootView = rootView;
     this.ivTileAppIcon = ivTileAppIcon;
     this.tvTileIcon = tvTileIcon;
     this.tvTileSubtitle = tvTileSubtitle;
     this.tvTileTitle = tvTileTitle;
+    this.tvTileWorkspaceBadge = tvTileWorkspaceBadge;
   }
 
   @Override
   @NonNull
-  public LinearLayout getRoot() {
+  public FrameLayout getRoot() {
     return rootView;
   }
 
@@ -93,8 +97,14 @@ public final class ItemDockTileBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ItemDockTileBinding((LinearLayout) rootView, ivTileAppIcon, tvTileIcon,
-          tvTileSubtitle, tvTileTitle);
+      id = R.id.tv_tile_workspace_badge;
+      TextView tvTileWorkspaceBadge = ViewBindings.findChildViewById(rootView, id);
+      if (tvTileWorkspaceBadge == null) {
+        break missingId;
+      }
+
+      return new ItemDockTileBinding((FrameLayout) rootView, ivTileAppIcon, tvTileIcon,
+          tvTileSubtitle, tvTileTitle, tvTileWorkspaceBadge);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

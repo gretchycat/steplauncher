@@ -24,6 +24,7 @@ class DockTileAdapter(
         val tvIcon: TextView = view.findViewById(R.id.tv_tile_icon)
         val tvTitle: TextView = view.findViewById(R.id.tv_tile_title)
         val tvSubtitle: TextView = view.findViewById(R.id.tv_tile_subtitle)
+        val tvBadge: TextView = view.findViewById(R.id.tv_tile_workspace_badge)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TileViewHolder {
@@ -93,6 +94,10 @@ class DockTileAdapter(
             holder.ivAppIcon.setImageDrawable(appDrawable)
             holder.ivAppIcon.visibility = View.VISIBLE
             holder.tvIcon.visibility = View.GONE
+        } else if (tile is DockTile.DockAnchor && (tile.iconSymbol == "📎" || tile.iconSymbol.equals("paperclip", ignoreCase = true) || tile.iconSymbol.isEmpty())) {
+            holder.ivAppIcon.setImageResource(R.drawable.ic_dock_anchor_paperclip)
+            holder.ivAppIcon.visibility = View.VISIBLE
+            holder.tvIcon.visibility = View.GONE
         } else {
             holder.ivAppIcon.visibility = View.GONE
             holder.tvIcon.visibility = View.VISIBLE
@@ -101,31 +106,39 @@ class DockTileAdapter(
 
         when (tile) {
             is DockTile.DockAnchor -> {
-                holder.tvSubtitle.text = "Dock Main"
+                holder.tvSubtitle.text = ""
+                holder.tvBadge.visibility = View.VISIBLE
+                holder.tvBadge.text = "${DockManager.currentWorkspaceIndex + 1}"
                 holder.itemView.alpha = 1.0f
             }
             is DockTile.AppShortcut -> {
                 holder.tvSubtitle.text = "App"
+                holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 1.0f
             }
             is DockTile.RunningTask -> {
                 holder.tvSubtitle.text = "PID:${tile.processId} ${tile.cpuUsagePercent}%"
+                holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 1.0f
             }
             is DockTile.VfsCategoryLink -> {
                 holder.tvSubtitle.text = "VFS Link"
+                holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 0.95f
             }
             is DockTile.InternalDockApp -> {
                 holder.tvSubtitle.text = tile.moduleType
+                holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 1.0f
             }
             is DockTile.ExternalDockApp -> {
                 holder.tvSubtitle.text = "Ext DockApp"
+                holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 1.0f
             }
             is DockTile.PlaceholderBox -> {
                 holder.tvSubtitle.text = tile.subtitle
+                holder.tvBadge.visibility = View.GONE
                 holder.itemView.alpha = 0.7f
             }
         }
