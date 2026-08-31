@@ -129,7 +129,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Section 2: Dock Operations -->
+            <!-- Section 2: Frosted Glass Tint Accent Color -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -141,19 +141,74 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Dock Gestures &amp; Long-Press Actions"
+                    android:text="🎨 Frosted Glass Accent Color Tint"
                     android:textColor="@color/amber_accent"
-                    android:textSize="12sp"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tv_current_accent_color"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="• Tap Dock Icon: Opens Settings\n• Long-Press Dock Icon: Prompts to add DockApp or Launcher\n• Long-Press Tile: Context Actions (Edit, Move, Copy, Remove)\n• Configurable Icon Size: Definable in Settings (Default 56dp)"
-                    android:textColor="@color/text_primary"
-                    android:textSize="10sp"
-                    android:lineSpacingExtra="3dp" />
+                    android:layout_marginTop="4dp"
+                    android:text="Current Tint: ❄️ Frosted Ice (#FFFFFF)"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_color_ice"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="❄️ Ice"
+                        android:textSize="9sp"
+                        android:textColor="#FFFFFF"
+                        app:strokeColor="#FFFFFF" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_color_cyan"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:text="💎 Cyan"
+                        android:textSize="9sp"
+                        android:textColor="#00E5FF"
+                        app:strokeColor="#00E5FF" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_color_violet"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:text="💜 Violet"
+                        android:textSize="9sp"
+                        android:textColor="#AB47BC"
+                        app:strokeColor="#AB47BC" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_color_amber"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:text="🧡 Amber"
+                        android:textSize="9sp"
+                        android:textColor="#FFAB00"
+                        app:strokeColor="#FFAB00" />
+
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Section 3: Reset Defaults -->

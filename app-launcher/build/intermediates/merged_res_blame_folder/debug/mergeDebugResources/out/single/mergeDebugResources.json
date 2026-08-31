@@ -24,6 +24,10 @@
         "source": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-main-34:/layout/item_dock_tile.xml"
     },
     {
+        "merged": "com.steplauncher.app.app-launcher-debug-32:/drawable_bg_frosted_glass_tile_base.png.flat",
+        "source": "com.steplauncher.app.app-launcher-main-34:/drawable/bg_frosted_glass_tile_base.png"
+    },
+    {
         "merged": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-debug-32:/drawable_ic_launcher.xml.flat",
         "source": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-main-34:/drawable/ic_launcher.xml"
     },

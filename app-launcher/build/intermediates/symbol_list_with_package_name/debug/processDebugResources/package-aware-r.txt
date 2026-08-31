@@ -2976,6 +2976,7 @@ drawable abc_textfield_search_material
 drawable abc_vector_test
 drawable avd_hide_password
 drawable avd_show_password
+drawable bg_frosted_glass_tile_base
 drawable bg_glass_center_canvas
 drawable bg_glass_dock_rail
 drawable bg_glass_dock_rail_active
@@ -3186,6 +3187,10 @@ id bounceBoth
 id bounceEnd
 id bounceStart
 id btn_back
+id btn_color_amber
+id btn_color_cyan
+id btn_color_ice
+id btn_color_violet
 id btn_reset_defaults
 id btn_size_28
 id btn_size_40
@@ -3575,6 +3580,7 @@ id transition_position
 id transition_scene_layoutid_cache
 id transition_transform
 id triangle
+id tv_current_accent_color
 id tv_current_icon_size
 id tv_tile_icon
 id tv_tile_subtitle

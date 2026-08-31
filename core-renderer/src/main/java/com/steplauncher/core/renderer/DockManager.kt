@@ -16,6 +16,7 @@ object DockManager {
     private const val KEY_LAYOUT_LOCKED = "key_layout_locked"
     private const val KEY_WORKSPACE_INDEX = "key_workspace_index"
     private const val KEY_WORKSPACE_PREFIX = "key_workspace_tiles_"
+    private const val KEY_ACCENT_COLOR = "key_accent_color"
 
     const val NUM_WORKSPACES = 3
 
@@ -23,6 +24,7 @@ object DockManager {
     var tileIconSizeDp: Int = 56
     var isLayoutLocked: Boolean = false
     var currentWorkspaceIndex: Int = 0
+    var accentColorHex: String = "#FFFFFF" // Default Frosted White
 
     private val listeners = mutableListOf<() -> Unit>()
 
@@ -81,6 +83,11 @@ object DockManager {
         notifyChanged(context)
     }
 
+    fun updateAccentColor(colorHex: String, context: Context) {
+        accentColorHex = colorHex
+        notifyChanged(context)
+    }
+
     fun scaleIconSize(scaleFactor: Float, context: Context? = null) {
         if (isLayoutLocked) return
         val newSize = (tileIconSizeDp * scaleFactor).toInt().coerceIn(24, 96)
@@ -105,6 +112,7 @@ object DockManager {
         tileIconSizeDp = 56 // Reset to 56dp (2x default)
         isLayoutLocked = false
         currentWorkspaceIndex = 0
+        accentColorHex = "#FFFFFF"
         isInitialized = true
 
         populateDefaultTiles(context)
@@ -123,6 +131,7 @@ object DockManager {
         tileIconSizeDp = prefs.getInt(KEY_ICON_SIZE, 56)
         isLayoutLocked = prefs.getBoolean(KEY_LAYOUT_LOCKED, false)
         currentWorkspaceIndex = prefs.getInt(KEY_WORKSPACE_INDEX, 0).coerceIn(0, NUM_WORKSPACES - 1)
+        accentColorHex = prefs.getString(KEY_ACCENT_COLOR, "#FFFFFF") ?: "#FFFFFF"
 
         val savedBottom = prefs.getString(KEY_BOTTOM, null)
         val savedWorkspace0 = prefs.getString(KEY_WORKSPACE_PREFIX + "0", null)
@@ -385,6 +394,7 @@ object DockManager {
             editor.putInt(KEY_ICON_SIZE, tileIconSizeDp)
             editor.putBoolean(KEY_LAYOUT_LOCKED, isLayoutLocked)
             editor.putInt(KEY_WORKSPACE_INDEX, currentWorkspaceIndex)
+            editor.putString(KEY_ACCENT_COLOR, accentColorHex)
 
             for (w in 0 until NUM_WORKSPACES) {
                 val jsonWs = JSONArray()
@@ -433,6 +443,7 @@ object DockManager {
 
     private fun restoreState(context: Context, prefs: android.content.SharedPreferences) {
         val pm = context.packageManager
+        accentColorHex = prefs.getString(KEY_ACCENT_COLOR, "#FFFFFF") ?: "#FFFFFF"
 
         fun parseList(jsonStr: String, targetList: MutableList<DockTile>) {
             targetList.clear()

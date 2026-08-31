@@ -24,6 +24,18 @@ public final class ActivitySettingsBinding implements ViewBinding {
   public final TextView btnBack;
 
   @NonNull
+  public final MaterialButton btnColorAmber;
+
+  @NonNull
+  public final MaterialButton btnColorCyan;
+
+  @NonNull
+  public final MaterialButton btnColorIce;
+
+  @NonNull
+  public final MaterialButton btnColorViolet;
+
+  @NonNull
   public final MaterialButton btnResetDefaults;
 
   @NonNull
@@ -39,19 +51,30 @@ public final class ActivitySettingsBinding implements ViewBinding {
   public final MaterialButton btnSize72;
 
   @NonNull
+  public final TextView tvCurrentAccentColor;
+
+  @NonNull
   public final TextView tvCurrentIconSize;
 
   private ActivitySettingsBinding(@NonNull LinearLayout rootView, @NonNull TextView btnBack,
+      @NonNull MaterialButton btnColorAmber, @NonNull MaterialButton btnColorCyan,
+      @NonNull MaterialButton btnColorIce, @NonNull MaterialButton btnColorViolet,
       @NonNull MaterialButton btnResetDefaults, @NonNull MaterialButton btnSize28,
       @NonNull MaterialButton btnSize40, @NonNull MaterialButton btnSize56,
-      @NonNull MaterialButton btnSize72, @NonNull TextView tvCurrentIconSize) {
+      @NonNull MaterialButton btnSize72, @NonNull TextView tvCurrentAccentColor,
+      @NonNull TextView tvCurrentIconSize) {
     this.rootView = rootView;
     this.btnBack = btnBack;
+    this.btnColorAmber = btnColorAmber;
+    this.btnColorCyan = btnColorCyan;
+    this.btnColorIce = btnColorIce;
+    this.btnColorViolet = btnColorViolet;
     this.btnResetDefaults = btnResetDefaults;
     this.btnSize28 = btnSize28;
     this.btnSize40 = btnSize40;
     this.btnSize56 = btnSize56;
     this.btnSize72 = btnSize72;
+    this.tvCurrentAccentColor = tvCurrentAccentColor;
     this.tvCurrentIconSize = tvCurrentIconSize;
   }
 
@@ -88,6 +111,30 @@ public final class ActivitySettingsBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.btn_color_amber;
+      MaterialButton btnColorAmber = ViewBindings.findChildViewById(rootView, id);
+      if (btnColorAmber == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_color_cyan;
+      MaterialButton btnColorCyan = ViewBindings.findChildViewById(rootView, id);
+      if (btnColorCyan == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_color_ice;
+      MaterialButton btnColorIce = ViewBindings.findChildViewById(rootView, id);
+      if (btnColorIce == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_color_violet;
+      MaterialButton btnColorViolet = ViewBindings.findChildViewById(rootView, id);
+      if (btnColorViolet == null) {
+        break missingId;
+      }
+
       id = R.id.btn_reset_defaults;
       MaterialButton btnResetDefaults = ViewBindings.findChildViewById(rootView, id);
       if (btnResetDefaults == null) {
@@ -118,14 +165,21 @@ public final class ActivitySettingsBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.tv_current_accent_color;
+      TextView tvCurrentAccentColor = ViewBindings.findChildViewById(rootView, id);
+      if (tvCurrentAccentColor == null) {
+        break missingId;
+      }
+
       id = R.id.tv_current_icon_size;
       TextView tvCurrentIconSize = ViewBindings.findChildViewById(rootView, id);
       if (tvCurrentIconSize == null) {
         break missingId;
       }
 
-      return new ActivitySettingsBinding((LinearLayout) rootView, btnBack, btnResetDefaults,
-          btnSize28, btnSize40, btnSize56, btnSize72, tvCurrentIconSize);
+      return new ActivitySettingsBinding((LinearLayout) rootView, btnBack, btnColorAmber,
+          btnColorCyan, btnColorIce, btnColorViolet, btnResetDefaults, btnSize28, btnSize40,
+          btnSize56, btnSize72, tvCurrentAccentColor, tvCurrentIconSize);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

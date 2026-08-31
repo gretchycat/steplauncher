@@ -1,5 +1,6 @@
 package com.steplauncher.app
 
+import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.view.HapticFeedbackConstants
@@ -57,6 +58,19 @@ class DockTileAdapter(
         }
 
         holder.tvIcon.textSize = iconSizeDp * 0.7f
+
+        // Dynamic Accent Color Tinting for Frosted Glass Tile Background
+        val accentColorHex = DockManager.accentColorHex
+        if (!accentColorHex.isNullOrEmpty() && accentColorHex != "#FFFFFF") {
+            try {
+                val colorInt = Color.parseColor(accentColorHex)
+                holder.itemView.background?.mutate()?.setTint(colorInt)
+            } catch (e: Exception) {
+                holder.itemView.background?.mutate()?.clearColorFilter()
+            }
+        } else {
+            holder.itemView.background?.mutate()?.clearColorFilter()
+        }
 
         // Try loading real application icon from PackageManager for App Shortcuts & Running Tasks
         val pkgName = when (tile) {

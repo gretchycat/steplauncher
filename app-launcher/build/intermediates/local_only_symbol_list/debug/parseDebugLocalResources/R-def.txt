@@ -8,12 +8,17 @@ color glass_panel_border
 color green_accent
 color text_primary
 color text_secondary
+drawable bg_frosted_glass_tile_base
 drawable bg_glass_center_canvas
 drawable bg_glass_dock_rail
 drawable bg_glass_dock_rail_active
 drawable bg_glass_dock_tile
 drawable ic_launcher
 id btn_back
+id btn_color_amber
+id btn_color_cyan
+id btn_color_ice
+id btn_color_violet
 id btn_reset_defaults
 id btn_size_28
 id btn_size_40
@@ -26,6 +31,7 @@ id iv_tile_app_icon
 id rv_dock_bottom
 id rv_dock_bottom_left
 id rv_dock_top_right
+id tv_current_accent_color
 id tv_current_icon_size
 id tv_tile_icon
 id tv_tile_subtitle
