@@ -101,8 +101,9 @@ class LauncherActivity : AppCompatActivity() {
     private val clockTickerHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val clockTickerRunnable = object : Runnable {
         override fun run() {
+            SysMonUtils.sampleTelemetry(this@LauncherActivity)
             refreshDocks()
-            clockTickerHandler.postDelayed(this, 3000)
+            clockTickerHandler.postDelayed(this, 1000)
         }
     }
 
@@ -436,7 +437,7 @@ class LauncherActivity : AppCompatActivity() {
                 sb.append("💻 Active CPU Load: ${cpu.cpuPercent}%\n")
                 sb.append("⚡ Hardware Cores: ${cpu.numCores} Cores\n")
                 sb.append("⚙️ Architecture: ${cpu.architecture}\n")
-                sb.append("📈 Sparkline Graph: ${cpu.sparklineGraph}\n")
+                sb.append("📈 Telemetry Buffer: ${SysMonUtils.cpuHistory.size} / 600 Samples (10 Min @ 1s)\n")
 
                 MaterialAlertDialogBuilder(this)
                     .setTitle("💻 CPU Hardware Status")
@@ -450,7 +451,7 @@ class LauncherActivity : AppCompatActivity() {
                 val sb = StringBuilder()
                 sb.append("📊 RAM Utilization: ${mem.ramUsagePercent}%\n")
                 sb.append("💾 Memory Allocated: ${mem.usedRamMb} MB / ${mem.totalRamMb} MB\n")
-                sb.append("📈 Memory Graph: ${mem.sparklineGraph}\n")
+                sb.append("📈 Telemetry Buffer: ${SysMonUtils.memoryHistory.size} / 600 Samples (10 Min @ 1s)\n")
 
                 MaterialAlertDialogBuilder(this)
                     .setTitle("📊 System Memory (RAM) Status")
@@ -463,7 +464,7 @@ class LauncherActivity : AppCompatActivity() {
                 val storage = SysMonUtils.getStorageMetrics(this)
                 val sb = StringBuilder()
                 sb.append("💾 Disk Capacity Used: ${storage.storagePercentUsed}%\n")
-                sb.append("📈 Storage Graph: ${storage.sparklineGraph}\n\n")
+                sb.append("📈 Telemetry Buffer: ${SysMonUtils.storageHistory.size} / 600 Samples (10 Min @ 1s)\n\n")
                 sb.append("📁 Available Storage Locations:\n")
                 storage.storageLocations.forEach { (locName, sizes) ->
                     val (freeGb, totalGb) = sizes
@@ -483,7 +484,7 @@ class LauncherActivity : AppCompatActivity() {
                 sb.append("🌐 Primary IP Address: ${net.ipAddress}\n")
                 sb.append("↓ Rx Throughput: ${net.rxRateKbps} KB/s\n")
                 sb.append("↑ Tx Throughput: ${net.txRateKbps} KB/s\n")
-                sb.append("📈 Network Graph: ${net.sparklineGraph}\n\n")
+                sb.append("📈 Telemetry Buffer: ${SysMonUtils.rxHistory.size} / 600 Samples (10 Min @ 1s)\n\n")
                 sb.append("🔌 Active Network Interfaces:\n")
                 net.activeInterfaces.forEach { iface ->
                     sb.append("  • $iface\n")

@@ -11,6 +11,20 @@ import android.graphics.Shader
 
 object SparklineGraphRenderer {
 
+    private fun subsampleHistory(history: List<Int>, maxPoints: Int = 30): List<Int> {
+        val list = synchronized(history) { history.toList() }
+        if (list.isEmpty()) return emptyList()
+        if (list.size <= maxPoints) return list
+
+        val result = mutableListOf<Int>()
+        val step = list.size.toFloat() / maxPoints
+        for (i in 0 until maxPoints) {
+            val idx = (i * step).toInt().coerceIn(0, list.size - 1)
+            result.add(list[idx])
+        }
+        return result
+    }
+
     /**
      * Draws a high-tech glowing CPU line sparkline graph.
      */
@@ -28,9 +42,10 @@ object SparklineGraphRenderer {
         val rect = RectF(4f, 4f, w - 4f, h - 4f)
         canvas.drawRoundRect(rect, 16f, 16f, bgPaint)
 
-        if (history.isEmpty()) return bitmap
+        val dataRaw = subsampleHistory(history, 30)
+        if (dataRaw.isEmpty()) return bitmap
 
-        val data = if (history.size < 2) listOf(history.first(), history.first()) else history
+        val data = if (dataRaw.size < 2) listOf(dataRaw.first(), dataRaw.first()) else dataRaw
         val stepX = (w - 24f) / (data.size - 1).coerceAtLeast(1)
         val paddingY = 16f
         val usableH = h - (paddingY * 2)
@@ -199,7 +214,8 @@ object SparklineGraphRenderer {
         val paddingY = 14f
         val usableH = (h - (paddingY * 2)) / 2f
 
-        fun drawSeries(data: List<Int>, colorHex: String, isUpper: Boolean) {
+        fun drawSeries(dataRaw: List<Int>, colorHex: String, isUpper: Boolean) {
+            val data = subsampleHistory(dataRaw, 30)
             if (data.isEmpty()) return
             val listData = if (data.size < 2) listOf(data.first(), data.first()) else data
             val stepX = (w - 24f) / (listData.size - 1).coerceAtLeast(1)
