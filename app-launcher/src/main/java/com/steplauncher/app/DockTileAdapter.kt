@@ -63,11 +63,11 @@ class DockTileAdapter(
 
         holder.tvIcon.textSize = iconSizeDp * 0.7f
 
-        // Dynamic Accent Color Tinting for Frosted Glass Tile Background
-        val accentColorHex = DockManager.accentColorHex
-        if (!accentColorHex.isNullOrEmpty() && accentColorHex != "#FFFFFF") {
+        // Dynamic Accent / Attention Color Tinting for Frosted Glass Tile Background
+        val targetTintHex = if (tile.isAttentionRequested) DockManager.attentionColorHex else DockManager.accentColorHex
+        if (!targetTintHex.isNullOrEmpty() && (targetTintHex != "#FFFFFF" || tile.isAttentionRequested)) {
             try {
-                val colorInt = Color.parseColor(accentColorHex)
+                val colorInt = Color.parseColor(targetTintHex)
                 holder.itemView.background?.mutate()?.setTint(colorInt)
             } catch (e: Exception) {
                 holder.itemView.background?.mutate()?.clearColorFilter()
@@ -249,7 +249,12 @@ class DockTileAdapter(
 
         com.steplauncher.core.renderer.ForgivingTouchHelper.bind(
             view = holder.itemView,
-            onClick = { onTileClick(tile) },
+            onClick = {
+                if (tile.isAttentionRequested) {
+                    DockManager.clearAttention(tile.id, holder.itemView.context)
+                }
+                onTileClick(tile)
+            },
             onLongClick = { view ->
                 onTileLongClickMenu(tile, view)
                 true

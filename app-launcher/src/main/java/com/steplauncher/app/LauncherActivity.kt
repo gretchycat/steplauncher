@@ -684,6 +684,7 @@ class LauncherActivity : AppCompatActivity() {
                     actions.add("✏️ Edit Title & Icon")
                     actions.add("🗑️ Remove from Dock")
                 }
+                actions.add("🔔 Request Attention (Test Tint)")
                 if (!isInternalSystemPkg(tile.packageName)) {
                     actions.add("ℹ️ System App Info")
                     actions.add("📦 Uninstall Application")
@@ -695,6 +696,7 @@ class LauncherActivity : AppCompatActivity() {
                     actions.add("📌 Copy to Dock...")
                 }
                 actions.add("❌ Terminate Process")
+                actions.add("🔔 Request Attention (Test Tint)")
                 if (!isInternalSystemPkg(tile.packageName)) {
                     actions.add("ℹ️ System App Info")
                     actions.add("📦 Uninstall Application")
@@ -784,6 +786,10 @@ class LauncherActivity : AppCompatActivity() {
                     }
                     selected.contains("System App Info") -> openSystemAppInfo(tile)
                     selected.contains("Uninstall Application") -> uninstallApplication(tile)
+                    selected.contains("Request Attention") -> {
+                        DockManager.requestAttention(tile.id, this)
+                        Toast.makeText(this, "🔔 Attention requested for ${tile.title}!", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
             .show()

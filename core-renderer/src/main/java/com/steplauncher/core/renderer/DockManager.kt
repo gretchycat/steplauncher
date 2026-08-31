@@ -18,6 +18,7 @@ object DockManager {
     private const val KEY_NUM_WORKSPACES = "key_num_workspaces"
     private const val KEY_WORKSPACE_PREFIX = "key_workspace_tiles_"
     private const val KEY_ACCENT_COLOR = "key_accent_color"
+    private const val KEY_ATTENTION_COLOR = "key_attention_color"
     private const val KEY_TEXT_COLOR = "key_text_color"
     private const val KEY_GRAPHIC_COLOR = "key_graphic_color"
     private const val KEY_COLOR_HIGH = "key_color_high"
@@ -30,12 +31,13 @@ object DockManager {
     var tileIconSizeDp: Int = 56
     var isLayoutLocked: Boolean = false
     var currentWorkspaceIndex: Int = 0
-    var accentColorHex: String = "#FFFFFF"   // Default Frosted White
-    var textColorHex: String = "#FFFFFF"     // Text Accent Color
-    var graphicColorHex: String = "#00E5FF"  // Graphic Accent Color
-    var colorHighHex: String = "#FF5252"     // High Threshold Alert Color
-    var colorMedHex: String = "#FFD700"      // Medium Threshold Color
-    var colorLowHex: String = "#00E676"      // Low Threshold Normal Color
+    var accentColorHex: String = "#FFFFFF"      // Default Frosted White
+    var attentionColorHex: String = "#FF3D00"   // Attention Request Tint (Flashing Amber / Neon Red)
+    var textColorHex: String = "#FFFFFF"        // Text Accent Color
+    var graphicColorHex: String = "#00E5FF"     // Graphic Accent Color
+    var colorHighHex: String = "#FF5252"        // High Threshold Alert Color
+    var colorMedHex: String = "#FFD700"         // Medium Threshold Color
+    var colorLowHex: String = "#00E676"         // Low Threshold Normal Color
     var clockTimeFormat: String = "HH:mm"
     var clockDateFormat: String = "EEE, MMM d"
 
@@ -148,6 +150,7 @@ object DockManager {
 
     fun updateThemeColors(
         accentHex: String = accentColorHex,
+        attentionHex: String = attentionColorHex,
         textHex: String = textColorHex,
         graphicHex: String = graphicColorHex,
         highHex: String = colorHighHex,
@@ -156,6 +159,7 @@ object DockManager {
         context: Context
     ) {
         accentColorHex = accentHex
+        attentionColorHex = attentionHex
         textColorHex = textHex
         graphicColorHex = graphicHex
         colorHighHex = highHex
@@ -163,6 +167,44 @@ object DockManager {
         colorLowHex = lowHex
         saveState(context)
         notifyChanged(context)
+    }
+
+    fun requestAttention(tileIdOrPkg: String, context: Context? = null) {
+        var found = false
+        val allLists = workspaceDocks + listOf(bottomLeftDockTiles, bottomDockTiles)
+        allLists.forEach { list ->
+            list.forEach { tile ->
+                val matches = tile.id == tileIdOrPkg ||
+                        (tile is DockTile.RunningTask && tile.packageName == tileIdOrPkg) ||
+                        (tile is DockTile.AppShortcut && tile.packageName == tileIdOrPkg)
+                if (matches) {
+                    tile.isAttentionRequested = true
+                    found = true
+                }
+            }
+        }
+        if (found) {
+            notifyChanged(context)
+        }
+    }
+
+    fun clearAttention(tileIdOrPkg: String, context: Context? = null) {
+        var found = false
+        val allLists = workspaceDocks + listOf(bottomLeftDockTiles, bottomDockTiles)
+        allLists.forEach { list ->
+            list.forEach { tile ->
+                val matches = tile.id == tileIdOrPkg ||
+                        (tile is DockTile.RunningTask && tile.packageName == tileIdOrPkg) ||
+                        (tile is DockTile.AppShortcut && tile.packageName == tileIdOrPkg)
+                if (matches && tile.isAttentionRequested) {
+                    tile.isAttentionRequested = false
+                    found = true
+                }
+            }
+        }
+        if (found) {
+            notifyChanged(context)
+        }
     }
 
     fun scaleIconSize(scaleFactor: Float, context: Context? = null) {
@@ -479,6 +521,7 @@ object DockManager {
             editor.putInt(KEY_WORKSPACE_INDEX, currentWorkspaceIndex)
             editor.putInt(KEY_NUM_WORKSPACES, workspaceDocks.size)
             editor.putString(KEY_ACCENT_COLOR, accentColorHex)
+            editor.putString(KEY_ATTENTION_COLOR, attentionColorHex)
             editor.putString(KEY_TEXT_COLOR, textColorHex)
             editor.putString(KEY_GRAPHIC_COLOR, graphicColorHex)
             editor.putString(KEY_COLOR_HIGH, colorHighHex)
@@ -535,6 +578,7 @@ object DockManager {
     private fun restoreState(context: Context, prefs: android.content.SharedPreferences) {
         val pm = context.packageManager
         accentColorHex = prefs.getString(KEY_ACCENT_COLOR, "#FFFFFF") ?: "#FFFFFF"
+        attentionColorHex = prefs.getString(KEY_ATTENTION_COLOR, "#FF3D00") ?: "#FF3D00"
         textColorHex = prefs.getString(KEY_TEXT_COLOR, "#FFFFFF") ?: "#FFFFFF"
         graphicColorHex = prefs.getString(KEY_GRAPHIC_COLOR, "#00E5FF") ?: "#00E5FF"
         colorHighHex = prefs.getString(KEY_COLOR_HIGH, "#FF5252") ?: "#FF5252"
