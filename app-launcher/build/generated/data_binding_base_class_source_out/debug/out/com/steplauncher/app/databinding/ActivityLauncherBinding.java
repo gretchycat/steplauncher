@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -42,11 +43,14 @@ public final class ActivityLauncherBinding implements ViewBinding {
   @NonNull
   public final RecyclerView rvDockTopRight;
 
+  @NonNull
+  public final TextView tvRunningHeader;
+
   private ActivityLauncherBinding(@NonNull ConstraintLayout rootView,
       @NonNull LinearLayout dockBottomContainer, @NonNull LinearLayout dockBottomLeftContainer,
       @NonNull LinearLayout dockTopRightContainer, @NonNull FrameLayout flWorkspaceWidgetCanvas,
       @NonNull RecyclerView rvDockBottom, @NonNull RecyclerView rvDockBottomLeft,
-      @NonNull RecyclerView rvDockTopRight) {
+      @NonNull RecyclerView rvDockTopRight, @NonNull TextView tvRunningHeader) {
     this.rootView = rootView;
     this.dockBottomContainer = dockBottomContainer;
     this.dockBottomLeftContainer = dockBottomLeftContainer;
@@ -55,6 +59,7 @@ public final class ActivityLauncherBinding implements ViewBinding {
     this.rvDockBottom = rvDockBottom;
     this.rvDockBottomLeft = rvDockBottomLeft;
     this.rvDockTopRight = rvDockTopRight;
+    this.tvRunningHeader = tvRunningHeader;
   }
 
   @Override
@@ -126,9 +131,15 @@ public final class ActivityLauncherBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.tv_running_header;
+      TextView tvRunningHeader = ViewBindings.findChildViewById(rootView, id);
+      if (tvRunningHeader == null) {
+        break missingId;
+      }
+
       return new ActivityLauncherBinding((ConstraintLayout) rootView, dockBottomContainer,
           dockBottomLeftContainer, dockTopRightContainer, flWorkspaceWidgetCanvas, rvDockBottom,
-          rvDockBottomLeft, rvDockTopRight);
+          rvDockBottomLeft, rvDockTopRight, tvRunningHeader);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

@@ -38,6 +38,7 @@ id rv_dock_bottom_left
 id rv_dock_top_right
 id tv_current_accent_color
 id tv_current_icon_size
+id tv_running_header
 id tv_tile_icon
 id tv_tile_subtitle
 id tv_tile_title

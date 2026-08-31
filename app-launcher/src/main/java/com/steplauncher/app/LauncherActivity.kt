@@ -282,7 +282,10 @@ class LauncherActivity : AppCompatActivity() {
         // Render active workspace widget canvas
         renderWorkspaceWidgetCanvas(DockManager.currentWorkspaceIndex)
 
-        // Bottom-Left Dock: Running Tasks Stack
+        // Bottom-Left Dock: Running Tasks Stack (Hide container and RUNNING header if empty)
+        val hasRunningTasks = DockManager.bottomLeftDockTiles.isNotEmpty()
+        binding.dockBottomLeftContainer.visibility = if (hasRunningTasks) View.VISIBLE else View.GONE
+
         binding.rvDockBottomLeft.adapter = DockTileAdapter(
             tiles = DockManager.bottomLeftDockTiles,
             onTileClick = { tile -> handleTileClick(tile, DockPosition.BOTTOM_LEFT) },
