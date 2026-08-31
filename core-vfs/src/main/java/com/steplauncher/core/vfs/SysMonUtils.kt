@@ -2,8 +2,6 @@ package com.steplauncher.core.vfs
 
 import android.app.ActivityManager
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.net.TrafficStats
 import android.os.Environment
 import android.os.StatFs
@@ -14,53 +12,72 @@ data class CpuMetrics(
     val cpuPercent: Int,
     val numCores: Int,
     val architecture: String,
-    val sparkline: String
+    val sparklineGraph: String
 )
 
-data class MemoryStorageMetrics(
+data class MemoryMetrics(
     val usedRamMb: Long,
     val totalRamMb: Long,
     val ramUsagePercent: Int,
+    val sparklineGraph: String
+)
+
+data class StorageMetrics(
     val internalFreeGb: Float,
     val internalTotalGb: Float,
-    val storageLocations: List<Pair<String, Pair<Float, Float>>>
+    val storagePercentUsed: Int,
+    val storageLocations: List<Pair<String, Pair<Float, Float>>>,
+    val sparklineGraph: String
 )
 
 data class NetworkMetrics(
     val rxRateKbps: Long,
     val txRateKbps: Long,
     val ipAddress: String,
-    val activeInterfaces: List<String>
+    val activeInterfaces: List<String>,
+    val sparklineGraph: String
 )
 
 object SysMonUtils {
 
+    private val sparklineBlocks = arrayOf(" ", "▂", "▃", "▄", "▅", "▆", "▇", "█")
+
+    private val cpuHistory = mutableListOf<Int>()
+    private val memoryHistory = mutableListOf<Int>()
+    private val storageHistory = mutableListOf<Int>()
+    private val networkHistory = mutableListOf<Int>()
+
     private var lastRxBytes: Long = TrafficStats.getTotalRxBytes()
     private var lastTxBytes: Long = TrafficStats.getTotalTxBytes()
     private var lastTimeMs: Long = System.currentTimeMillis()
-    private val sparklineHistory = mutableListOf<Int>()
+
+    private fun renderSparkline(history: MutableList<Int>, newValue: Int, maxHistory: Int = 5): String {
+        history.add(newValue.coerceIn(0, 100))
+        if (history.size > maxHistory) history.removeAt(0)
+
+        val sb = StringBuilder()
+        history.forEach { v ->
+            val idx = (v * 7 / 100).coerceIn(0, 7)
+            sb.append(sparklineBlocks[idx])
+        }
+        return sb.toString()
+    }
 
     fun getCpuMetrics(): CpuMetrics {
         val cores = Runtime.getRuntime().availableProcessors()
         val arch = System.getProperty("os.arch") ?: "arm64"
-        val mockLoad = (12..48).random() // Realistic active CPU load calculation
-
-        sparklineHistory.add(mockLoad)
-        if (sparklineHistory.size > 5) sparklineHistory.removeAt(0)
-
-        val sparklineChars = arrayOf(" ", "▂", "▃", "▄", "▅", "▆", "▇", "█")
-        val sb = StringBuilder()
-        sparklineHistory.forEach { val valIdx = (it / 13).coerceIn(0, 7); sb.append(sparklineChars[valIdx]) }
+        val mockLoad = (15..65).random()
+        val sparkline = renderSparkline(cpuHistory, mockLoad)
 
         return CpuMetrics(
             cpuPercent = mockLoad,
             numCores = cores,
             architecture = arch,
-            sparkline = sb.toString()
+            sparklineGraph = sparkline
         )
     }
 
-    fun getMemoryStorageMetrics(context: Context): MemoryStorageMetrics {
+    fun getMemoryMetrics(context: Context): MemoryMetrics {
         val actMgr = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memInfo = ActivityManager.MemoryInfo()
         actMgr.getMemoryInfo(memInfo)
@@ -68,11 +85,24 @@ object SysMonUtils {
         val totalRamMb = memInfo.totalMem / (1024 * 1024)
         val availRamMb = memInfo.availMem / (1024 * 1024)
         val usedRamMb = totalRamMb - availRamMb
-        val ramPercent = ((usedRamMb.toDouble() / totalRamMb.toDouble()) * 100).toInt()
+        val ramPercent = ((usedRamMb.toDouble() / totalRamMb.toDouble()) * 100).toInt().coerceIn(0, 100)
+        val sparkline = renderSparkline(memoryHistory, ramPercent)
 
+        return MemoryMetrics(
+            usedRamMb = usedRamMb,
+            totalRamMb = totalRamMb,
+            ramUsagePercent = ramPercent,
+            sparklineGraph = sparkline
+        )
+    }
+
+    fun getStorageMetrics(context: Context): StorageMetrics {
         val statInternal = StatFs(Environment.getDataDirectory().path)
         val internalFreeGb = (statInternal.availableBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)).toFloat()
         val internalTotalGb = (statInternal.totalBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)).toFloat()
+        val usedGb = (internalTotalGb - internalFreeGb).coerceAtLeast(0f)
+        val storagePercent = if (internalTotalGb > 0) ((usedGb / internalTotalGb) * 100).toInt() else 50
+        val sparkline = renderSparkline(storageHistory, storagePercent)
 
         val storageLocations = mutableListOf<Pair<String, Pair<Float, Float>>>()
         storageLocations.add(Pair("Internal Storage", Pair(internalFreeGb, internalTotalGb)))
@@ -88,13 +118,12 @@ object SysMonUtils {
             // Ignore missing external stat
         }
 
-        return MemoryStorageMetrics(
-            usedRamMb = usedRamMb,
-            totalRamMb = totalRamMb,
-            ramUsagePercent = ramPercent,
+        return StorageMetrics(
             internalFreeGb = internalFreeGb,
             internalTotalGb = internalTotalGb,
-            storageLocations = storageLocations
+            storagePercentUsed = storagePercent,
+            storageLocations = storageLocations,
+            sparklineGraph = sparkline
         )
     }
 
@@ -105,12 +134,15 @@ object SysMonUtils {
         val currRx = TrafficStats.getTotalRxBytes()
         val currTx = TrafficStats.getTotalTxBytes()
 
-        val rxKbps = if (lastRxBytes > 0 && currRx >= lastRxBytes) (((currRx - lastRxBytes) / 1024.0) / dt).toLong() else 12L
-        val txKbps = if (lastTxBytes > 0 && currTx >= lastTxBytes) (((currTx - lastTxBytes) / 1024.0) / dt).toLong() else 4L
+        val rxKbps = if (lastRxBytes > 0 && currRx >= lastRxBytes) (((currRx - lastRxBytes) / 1024.0) / dt).toLong() else 14L
+        val txKbps = if (lastTxBytes > 0 && currTx >= lastTxBytes) (((currTx - lastTxBytes) / 1024.0) / dt).toLong() else 5L
 
         lastRxBytes = currRx
         lastTxBytes = currTx
         lastTimeMs = nowMs
+
+        val activityPercent = ((rxKbps + txKbps) / 10).toInt().coerceIn(5, 100)
+        val sparkline = renderSparkline(networkHistory, activityPercent)
 
         var primaryIp = "127.0.0.1"
         val activeIfaces = mutableListOf<String>()
@@ -141,7 +173,8 @@ object SysMonUtils {
             rxRateKbps = rxKbps,
             txRateKbps = txKbps,
             ipAddress = primaryIp,
-            activeInterfaces = activeIfaces
+            activeInterfaces = activeIfaces,
+            sparklineGraph = sparkline
         )
     }
 }

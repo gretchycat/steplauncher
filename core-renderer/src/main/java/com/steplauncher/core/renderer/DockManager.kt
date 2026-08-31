@@ -298,7 +298,7 @@ object DockManager {
 
     fun cycleWmMonMode(tileId: String, context: Context? = null): Int {
         val current = getWmMonMode(tileId)
-        val next = (current + 1) % 3
+        val next = (current + 1) % 4
         wmMonDisplayModes[tileId] = next
         notifyChanged(context)
         return next

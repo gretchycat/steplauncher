@@ -162,24 +162,32 @@ class DockTileAdapter(
                     holder.tvIcon.text = if (bat.isCharging) "⚡" else if (bat.levelPercent <= 20) "🪫" else "🔋"
                 } else if (tile.moduleType.equals("WMMON", ignoreCase = true) || tile.moduleType.equals("TELEMETRY", ignoreCase = true)) {
                     val mode = DockManager.getWmMonMode(tile.id)
+                    holder.ivAppIcon.visibility = View.GONE
+                    holder.tvIcon.visibility = View.VISIBLE
                     when (mode) {
                         0 -> { // CPU Mode
                             val cpu = com.steplauncher.core.vfs.SysMonUtils.getCpuMetrics()
+                            holder.tvIcon.text = cpu.sparklineGraph
                             holder.tvTitle.text = "CPU: ${cpu.cpuPercent}%"
-                            holder.tvSubtitle.text = "${cpu.numCores} Cores ${cpu.sparkline}"
-                            holder.tvIcon.text = "💻"
+                            holder.tvSubtitle.text = "${cpu.numCores} Cores"
                         }
-                        1 -> { // Memory & Storage Mode
-                            val mem = com.steplauncher.core.vfs.SysMonUtils.getMemoryStorageMetrics(holder.itemView.context)
+                        1 -> { // Memory Mode
+                            val mem = com.steplauncher.core.vfs.SysMonUtils.getMemoryMetrics(holder.itemView.context)
+                            holder.tvIcon.text = mem.sparklineGraph
                             holder.tvTitle.text = "RAM: ${mem.ramUsagePercent}%"
-                            holder.tvSubtitle.text = "💾 ${String.format(Locale.US, "%.1f", mem.internalFreeGb)}GB Free"
-                            holder.tvIcon.text = "📊"
+                            holder.tvSubtitle.text = "${mem.usedRamMb}M / ${mem.totalRamMb}M"
                         }
-                        2 -> { // Network Mode
+                        2 -> { // Storage Mode
+                            val storage = com.steplauncher.core.vfs.SysMonUtils.getStorageMetrics(holder.itemView.context)
+                            holder.tvIcon.text = storage.sparklineGraph
+                            holder.tvTitle.text = "Disk: ${storage.storagePercentUsed}%"
+                            holder.tvSubtitle.text = "${String.format(Locale.US, "%.1f", storage.internalFreeGb)}G Free"
+                        }
+                        3 -> { // Network Mode
                             val net = com.steplauncher.core.vfs.SysMonUtils.getNetworkMetrics(holder.itemView.context)
+                            holder.tvIcon.text = net.sparklineGraph
                             holder.tvTitle.text = "↓${net.rxRateKbps}K ↑${net.txRateKbps}K"
-                            holder.tvSubtitle.text = "🌐 ${net.ipAddress}"
-                            holder.tvIcon.text = "🌐"
+                            holder.tvSubtitle.text = net.ipAddress
                         }
                     }
                 } else {
