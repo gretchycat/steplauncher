@@ -1,0 +1,7 @@
+int id widget_bottom_dock_content 0x0
+int id widget_status 0x0
+int id widget_title 0x0
+int id widget_top_left_content 0x0
+int id widget_top_right_content 0x0
+int layout widget_step_launcher 0x0
+int xml step_launcher_widget_info 0x0

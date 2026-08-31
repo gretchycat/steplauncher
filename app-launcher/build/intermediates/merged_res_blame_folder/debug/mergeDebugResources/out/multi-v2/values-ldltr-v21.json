@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.steplauncher.app.app-launcher-mergeDebugResources-30:/values-ldltr-v21/values-ldltr-v21.xml",
+            "map": [
+                {
+                    "source": "/data/data/com.termux/files/home/.gradle/caches/9.6.1/transforms/4101d0b6988375a69956bfb59e21c652/transformed/appcompat-1.6.1/res/values-ldltr-v21/values-ldltr-v21.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "112",
+                        "endOffsets": "163"
+                    }
+                }
+            ]
+        }
+    ]
+}

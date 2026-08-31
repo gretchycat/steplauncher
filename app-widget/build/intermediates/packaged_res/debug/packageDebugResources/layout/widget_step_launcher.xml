@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#DD121620"
+    android:padding="8dp">
+
+    <!-- Header bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="4dp"
+        android:background="#33FFFFFF">
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="❖ STEP LAUNCHER DOCK"
+            android:textColor="#00E5FF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="WIDGET MODE"
+            android:textColor="#AAFFFFFF"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <!-- Top Docks Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <!-- Top Left Dock (External DockApp Target) -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="#2200E5FF"
+            android:padding="4dp"
+            android:layout_marginEnd="4dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="TOP-LEFT (EXT TARGET)"
+                android:textColor="#00E5FF"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_top_left_content"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="[Ext Slot: Auto-Receives Apps]\n📦 Slot 1"
+                android:textColor="#E0E0E0"
+                android:textSize="11sp"
+                android:paddingTop="4dp" />
+        </LinearLayout>
+
+        <!-- Top Right Dock (Vertical Dockapps) -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="#22768396"
+            android:padding="4dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="TOP-RIGHT DOCK"
+                android:textColor="#FFB74D"
+                android:textSize="9sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_top_right_content"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="⏰ wmclock\n⚡ wmbattery\n📊 wmmon\n📁 VFS Root"
+                android:textColor="#E0E0E0"
+                android:textSize="11sp"
+                android:paddingTop="4dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Bottom Dock Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#33000000"
+        android:padding="4dp"
+        android:layout_marginTop="4dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="BOTTOM DOCK"
+            android:textColor="#81C784"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_bottom_dock_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📞 Phone | 🌐 Browser | 📷 Camera | 💬 Social | 🎬 Media"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:paddingTop="2dp" />
+    </LinearLayout>
+</LinearLayout>
