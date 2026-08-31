@@ -155,6 +155,11 @@ class DockTileAdapter(
 
                     holder.tvSubtitle.text = formattedDate
                     holder.tvSubtitle.textSize = iconSizeDp * 0.22f
+                } else if (tile.moduleType.equals("WMBATTERY", ignoreCase = true)) {
+                    val bat = com.steplauncher.core.vfs.BatteryUtils.getBatteryStatus(holder.itemView.context)
+                    holder.tvTitle.text = "${bat.levelPercent}%"
+                    holder.tvSubtitle.text = if (bat.isCharging) "⚡ ${bat.chargePlugStr}" else "🔋 Discharging"
+                    holder.tvIcon.text = if (bat.isCharging) "⚡" else if (bat.levelPercent <= 20) "🪫" else "🔋"
                 } else {
                     holder.tvSubtitle.text = tile.moduleType
                 }

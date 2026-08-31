@@ -31,6 +31,7 @@ import com.steplauncher.app.databinding.ActivityLauncherBinding
 import com.steplauncher.core.renderer.DockManager
 import com.steplauncher.core.renderer.DockPosition
 import com.steplauncher.core.renderer.DockTile
+import com.steplauncher.core.vfs.BatteryUtils
 import com.steplauncher.core.vfs.VfsCategory
 import com.steplauncher.widget.WorkspaceWidgetHostManager
 import com.steplauncher.widget.WorkspaceWidgetInfo
@@ -373,6 +374,8 @@ class LauncherActivity : AppCompatActivity() {
                         Toast.makeText(this, "Unable to launch Clock application", Toast.LENGTH_SHORT).show()
                     }
                     DockManager.launchAndAddToRunningStack(clockApp.label, "⏰", clockApp.packageName, clockApp.launchIntent)
+                } else if (tile.moduleType.equals("WMBATTERY", ignoreCase = true)) {
+                    showExtendedBatteryDialog()
                 } else {
                     Toast.makeText(this, "Dockapp: ${tile.title} [${tile.moduleType}]", Toast.LENGTH_SHORT).show()
                 }
@@ -382,6 +385,52 @@ class LauncherActivity : AppCompatActivity() {
             }
             is DockTile.PlaceholderBox -> {
                 showAddDockAppDialog(position)
+            }
+        }
+    }
+
+    private fun showExtendedBatteryDialog() {
+        val bat = BatteryUtils.getBatteryStatus(this)
+        val sb = StringBuilder()
+        sb.append("🔋 Charge Level: ${bat.levelPercent}%\n")
+        sb.append("⚡ Power Source: ${if (bat.isCharging) "Charging (${bat.chargePlugStr})" else "Discharging (On Battery)"}\n")
+        sb.append("🩺 Battery Health: ${bat.healthStr}\n")
+        sb.append("🌡️ Temperature: ${bat.tempCelsius} °C\n")
+        sb.append("⚡ Voltage: ${bat.voltageMv} mV (${bat.technology})\n\n")
+
+        sb.append("🎧 Connected Bluetooth Devices:\n")
+        if (bat.connectedDeviceBatteries.isNotEmpty()) {
+            bat.connectedDeviceBatteries.forEach { (deviceName, level) ->
+                sb.append("  • $deviceName: $level%\n")
+            }
+        } else {
+            sb.append("  • No connected battery devices detected\n")
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("🔋 Extended Battery Information")
+            .setMessage(sb.toString().trimEnd())
+            .setPositiveButton("OK", null)
+            .setNeutralButton("⚙️ Battery Settings") { _, _ ->
+                openSystemBatterySettings()
+            }
+            .show()
+    }
+
+    private fun openSystemBatterySettings() {
+        try {
+            val intent = Intent(Intent.ACTION_POWER_USAGE_SUMMARY)
+            startActivity(intent)
+        } catch (e: Exception) {
+            try {
+                val intent = Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)
+                startActivity(intent)
+            } catch (e2: Exception) {
+                try {
+                    startActivity(Intent(Settings.ACTION_SETTINGS))
+                } catch (e3: Exception) {
+                    Toast.makeText(this, "Unable to launch Battery Settings", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -494,6 +543,9 @@ class LauncherActivity : AppCompatActivity() {
                 if (tile.moduleType.equals("WMCLOCK", ignoreCase = true)) {
                     actions.add("🚀 Open Clock Application")
                     actions.add("⚙️ Configure Time & Date Format")
+                } else if (tile.moduleType.equals("WMBATTERY", ignoreCase = true)) {
+                    actions.add("📊 Extended Battery Information")
+                    actions.add("🔋 Open System Battery Settings")
                 } else {
                     actions.add("⚙️ Configure DockApp")
                 }
@@ -526,6 +578,8 @@ class LauncherActivity : AppCompatActivity() {
                     selected.contains("Launch Application") -> handleTileClick(tile, currentDock)
                     selected.contains("Open Clock Application") -> handleTileClick(tile, currentDock)
                     selected.contains("Configure Time & Date Format") -> showClockDockAppConfigDialog()
+                    selected.contains("Extended Battery Information") -> showExtendedBatteryDialog()
+                    selected.contains("Open System Battery Settings") -> openSystemBatterySettings()
                     selected.contains("Focus Running Process") -> handleTileClick(tile, currentDock)
                     selected.contains("Open VFS Category") -> handleTileClick(tile, currentDock)
                     selected.contains("Open External DockApp") -> handleTileClick(tile, currentDock)
