@@ -551,7 +551,6 @@ class LauncherActivity : AppCompatActivity() {
                 }
                 if (!isLocked) {
                     actions.add("↔️ Move to Dock...")
-                    actions.add("✏️ Edit Title & Icon")
                     actions.add("🗑️ Remove from Dock")
                 }
             }
@@ -559,7 +558,6 @@ class LauncherActivity : AppCompatActivity() {
                 actions.add("🚀 Open External DockApp")
                 if (!isLocked) {
                     actions.add("↔️ Move to Dock...")
-                    actions.add("✏️ Edit Title & Icon")
                     actions.add("🗑️ Remove from Dock")
                 }
                 if (!isInternalSystemPkg(tile.descriptor.packageName)) {

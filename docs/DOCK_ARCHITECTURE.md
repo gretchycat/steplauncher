@@ -80,8 +80,8 @@ When **Layout Lock** is enabled (`isLayoutLocked == true`):
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | `AppShortcut` | Yes | No | No | Yes | Yes | Yes | **Yes (Deletes Tile)** |
 | `RunningTask` | Yes | **Yes** | Yes | No | Yes | No (Use Close) | No |
-| `ExternalDockApp` | Yes | No | No | Yes | Yes | Yes | **Yes (Deletes Tile)** |
-| `InternalDockApp` | Yes | No | No | Yes | Yes | Yes | No |
+| `ExternalDockApp` | Yes | No | No | Yes | No | Yes | **Yes (Deletes Tile)** |
+| `InternalDockApp` | Yes | No | No | Yes | No | Yes | No |
 
 ---
 
