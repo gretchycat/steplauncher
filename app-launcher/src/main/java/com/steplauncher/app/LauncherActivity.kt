@@ -169,17 +169,15 @@ class LauncherActivity : AppCompatActivity() {
                 }
                 return false
             }
-
-            override fun onLongPress(e: MotionEvent) {
-                showDesktopBackgroundMenu()
-            }
         })
 
-        binding.root.setOnTouchListener { _, event ->
-            scaleGestureDetector.onTouchEvent(event)
-            gestureDetector.onTouchEvent(event)
-            true
-        }
+        com.steplauncher.core.renderer.ForgivingTouchHelper.bind(
+            view = binding.root,
+            onLongClick = {
+                showDesktopBackgroundMenu()
+                true
+            }
+        )
     }
 
     private fun showDesktopBackgroundMenu() {
@@ -324,22 +322,25 @@ class LauncherActivity : AppCompatActivity() {
             }
             hostView.layoutParams = lp
 
-            // Long-press handler to remove widget from workspace
-            hostView.setOnLongClickListener {
-                if (!DockManager.isLayoutLocked) {
-                    MaterialAlertDialogBuilder(this)
-                        .setTitle("🧩 Remove Android Widget")
-                        .setMessage("Remove this widget from Workspace ${workspaceIndex + 1}?")
-                        .setPositiveButton("Remove") { _, _ ->
-                            WorkspaceWidgetHostManager.deleteAppWidgetId(info.appWidgetId, this)
-                            renderWorkspaceWidgetCanvas(workspaceIndex)
-                            Toast.makeText(this, "Widget removed", Toast.LENGTH_SHORT).show()
-                        }
-                        .setNegativeButton("Cancel", null)
-                        .show()
-                    true
-                } else false
-            }
+            // Forgiving long-press handler to remove widget from workspace
+            com.steplauncher.core.renderer.ForgivingTouchHelper.bind(
+                view = hostView,
+                onLongClick = {
+                    if (!DockManager.isLayoutLocked) {
+                        MaterialAlertDialogBuilder(this)
+                            .setTitle("🧩 Remove Android Widget")
+                            .setMessage("Remove this widget from Workspace ${workspaceIndex + 1}?")
+                            .setPositiveButton("Remove") { _, _ ->
+                                WorkspaceWidgetHostManager.deleteAppWidgetId(info.appWidgetId, this)
+                                renderWorkspaceWidgetCanvas(workspaceIndex)
+                                Toast.makeText(this, "Widget removed", Toast.LENGTH_SHORT).show()
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
+                        true
+                    } else false
+                }
+            )
 
             binding.flWorkspaceWidgetCanvas.addView(hostView)
         }

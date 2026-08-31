@@ -247,18 +247,14 @@ class DockTileAdapter(
             }
         }
 
-        holder.itemView.isClickable = true
-        holder.itemView.isLongClickable = true
-
-        holder.itemView.setOnClickListener {
-            onTileClick(tile)
-        }
-
-        holder.itemView.setOnLongClickListener { view ->
-            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            onTileLongClickMenu(tile, view)
-            true
-        }
+        com.steplauncher.core.renderer.ForgivingTouchHelper.bind(
+            view = holder.itemView,
+            onClick = { onTileClick(tile) },
+            onLongClick = { view ->
+                onTileLongClickMenu(tile, view)
+                true
+            }
+        )
     }
 
     override fun getItemCount(): Int = tiles.size
