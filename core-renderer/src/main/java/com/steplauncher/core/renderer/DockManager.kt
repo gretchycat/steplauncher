@@ -15,10 +15,9 @@ object DockManager {
     private const val KEY_ICON_SIZE = "key_tile_icon_size_dp"
     private const val KEY_LAYOUT_LOCKED = "key_layout_locked"
     private const val KEY_WORKSPACE_INDEX = "key_workspace_index"
+    private const val KEY_NUM_WORKSPACES = "key_num_workspaces"
     private const val KEY_WORKSPACE_PREFIX = "key_workspace_tiles_"
     private const val KEY_ACCENT_COLOR = "key_accent_color"
-
-    const val NUM_WORKSPACES = 3
 
     // Default icon size set to 56dp (twice as big as previous 28dp/30dp)
     var tileIconSizeDp: Int = 56
@@ -28,12 +27,19 @@ object DockManager {
 
     private val listeners = mutableListOf<() -> Unit>()
 
-    // Workspace Docks: Each workspace has its own independent Right-Handed Workspace Dock
-    val workspaceDocks = MutableList(NUM_WORKSPACES) { mutableListOf<DockTile>() }
+    // Workspace Docks: Dynamic list of workspace dock lists
+    val workspaceDocks = mutableListOf<MutableList<DockTile>>()
+
+    val totalWorkspaces: Int get() = workspaceDocks.size
 
     // Dynamic getter returning active workspace tiles
     val topRightDockTiles: MutableList<DockTile>
-        get() = workspaceDocks[currentWorkspaceIndex]
+        get() {
+            if (workspaceDocks.isEmpty()) {
+                workspaceDocks.add(mutableListOf())
+            }
+            return workspaceDocks[currentWorkspaceIndex.coerceIn(0, workspaceDocks.size - 1)]
+        }
 
     val bottomLeftDockTiles = mutableListOf<DockTile>() // Running Tasks Stack (grows up)
     val bottomDockTiles = mutableListOf<DockTile>()     // Bottom Dock = Global Dock
@@ -62,7 +68,8 @@ object DockManager {
     }
 
     fun switchToWorkspace(index: Int, context: Context? = null) {
-        val targetIndex = index.coerceIn(0, NUM_WORKSPACES - 1)
+        if (workspaceDocks.isEmpty()) return
+        val targetIndex = index.coerceIn(0, workspaceDocks.size - 1)
         if (currentWorkspaceIndex != targetIndex) {
             currentWorkspaceIndex = targetIndex
             notifyChanged(context)
@@ -70,11 +77,47 @@ object DockManager {
     }
 
     fun nextWorkspace(context: Context? = null) {
-        switchToWorkspace((currentWorkspaceIndex + 1) % NUM_WORKSPACES, context)
+        if (workspaceDocks.isEmpty()) return
+        switchToWorkspace((currentWorkspaceIndex + 1) % workspaceDocks.size, context)
     }
 
     fun prevWorkspace(context: Context? = null) {
-        switchToWorkspace((currentWorkspaceIndex - 1 + NUM_WORKSPACES) % NUM_WORKSPACES, context)
+        if (workspaceDocks.isEmpty()) return
+        switchToWorkspace((currentWorkspaceIndex - 1 + workspaceDocks.size) % workspaceDocks.size, context)
+    }
+
+    /**
+     * Adds a new Workspace and switches to it.
+     */
+    fun addWorkspace(context: Context? = null): Int {
+        if (isLayoutLocked) return currentWorkspaceIndex
+        val newIndex = workspaceDocks.size
+        val newWorkspace = mutableListOf<DockTile>()
+        newWorkspace.add(
+            DockTile.DockAnchor(
+                id = "dock_anchor_ws_${newIndex + 1}_${System.currentTimeMillis()}",
+                title = "Workspace ${newIndex + 1}",
+                iconSymbol = "📎"
+            )
+        )
+        workspaceDocks.add(newWorkspace)
+        currentWorkspaceIndex = newIndex
+        notifyChanged(context)
+        return newIndex
+    }
+
+    /**
+     * Removes the current workspace.
+     * Rules: Workspace 1 (index 0) can NEVER be removed!
+     */
+    fun removeCurrentWorkspace(context: Context? = null): Boolean {
+        if (isLayoutLocked || currentWorkspaceIndex == 0 || workspaceDocks.size <= 1) {
+            return false // First workspace can NEVER be removed!
+        }
+        workspaceDocks.removeAt(currentWorkspaceIndex)
+        currentWorkspaceIndex = (currentWorkspaceIndex - 1).coerceAtLeast(0)
+        notifyChanged(context)
+        return true
     }
 
     fun updateIconSize(newSizeDp: Int, context: Context) {
@@ -105,7 +148,7 @@ object DockManager {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().clear().commit()
 
-        workspaceDocks.forEach { it.clear() }
+        workspaceDocks.clear()
         bottomLeftDockTiles.clear()
         bottomDockTiles.clear()
 
@@ -130,7 +173,6 @@ object DockManager {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         tileIconSizeDp = prefs.getInt(KEY_ICON_SIZE, 56)
         isLayoutLocked = prefs.getBoolean(KEY_LAYOUT_LOCKED, false)
-        currentWorkspaceIndex = prefs.getInt(KEY_WORKSPACE_INDEX, 0).coerceIn(0, NUM_WORKSPACES - 1)
         accentColorHex = prefs.getString(KEY_ACCENT_COLOR, "#FFFFFF") ?: "#FFFFFF"
 
         val savedBottom = prefs.getString(KEY_BOTTOM, null)
@@ -138,6 +180,7 @@ object DockManager {
 
         if (savedBottom != null && savedWorkspace0 != null) {
             restoreState(context, prefs)
+            currentWorkspaceIndex = prefs.getInt(KEY_WORKSPACE_INDEX, 0).coerceIn(0, workspaceDocks.size - 1)
             initRunningStackDefaults()
             notifyChanged()
             return
@@ -149,22 +192,28 @@ object DockManager {
     }
 
     private fun populateDefaultTiles(context: Context) {
-        workspaceDocks.forEach { it.clear() }
+        workspaceDocks.clear()
 
         // WORKSPACE 1 DEFAULT DOCK
-        workspaceDocks[0].add(DockTile.DockAnchor(id = "dock_anchor_ws1", title = "Workspace 1", iconSymbol = "📎"))
-        workspaceDocks[0].add(DockTile.InternalDockApp(id = "wmclock", title = "Clock / Cal", iconSymbol = "⏰", moduleType = "WMCLOCK"))
-        workspaceDocks[0].add(DockTile.InternalDockApp(id = "wmbattery", title = "Battery Mon", iconSymbol = "⚡", moduleType = "WMBATTERY"))
-        workspaceDocks[0].add(DockTile.InternalDockApp(id = "wmmon", title = "CPU & Net", iconSymbol = "📊", moduleType = "WMMON"))
+        val ws1 = mutableListOf<DockTile>()
+        ws1.add(DockTile.DockAnchor(id = "dock_anchor_ws1", title = "Workspace 1", iconSymbol = "📎"))
+        ws1.add(DockTile.InternalDockApp(id = "wmclock", title = "Clock / Cal", iconSymbol = "⏰", moduleType = "WMCLOCK"))
+        ws1.add(DockTile.InternalDockApp(id = "wmbattery", title = "Battery Mon", iconSymbol = "⚡", moduleType = "WMBATTERY"))
+        ws1.add(DockTile.InternalDockApp(id = "wmmon", title = "CPU & Net", iconSymbol = "📊", moduleType = "WMMON"))
+        workspaceDocks.add(ws1)
 
         // WORKSPACE 2 DEFAULT DOCK
-        workspaceDocks[1].add(DockTile.DockAnchor(id = "dock_anchor_ws2", title = "Workspace 2", iconSymbol = "📎"))
-        workspaceDocks[1].add(DockTile.VfsCategoryLink(id = "ws2_dev", title = "Development", iconSymbol = "⚡", category = VfsCategory.DEVELOPMENT))
-        workspaceDocks[1].add(DockTile.VfsCategoryLink(id = "ws2_prod", title = "Productivity", iconSymbol = "💼", category = VfsCategory.PRODUCTIVITY))
+        val ws2 = mutableListOf<DockTile>()
+        ws2.add(DockTile.DockAnchor(id = "dock_anchor_ws2", title = "Workspace 2", iconSymbol = "📎"))
+        ws2.add(DockTile.VfsCategoryLink(id = "ws2_dev", title = "Development", iconSymbol = "⚡", category = VfsCategory.DEVELOPMENT))
+        ws2.add(DockTile.VfsCategoryLink(id = "ws2_prod", title = "Productivity", iconSymbol = "💼", category = VfsCategory.PRODUCTIVITY))
+        workspaceDocks.add(ws2)
 
         // WORKSPACE 3 DEFAULT DOCK
-        workspaceDocks[2].add(DockTile.DockAnchor(id = "dock_anchor_ws3", title = "Workspace 3", iconSymbol = "📎"))
-        workspaceDocks[2].add(DockTile.VfsCategoryLink(id = "ws3_games", title = "Games", iconSymbol = "🎮", category = VfsCategory.MULTIMEDIA))
+        val ws3 = mutableListOf<DockTile>()
+        ws3.add(DockTile.DockAnchor(id = "dock_anchor_ws3", title = "Workspace 3", iconSymbol = "📎"))
+        ws3.add(DockTile.VfsCategoryLink(id = "ws3_games", title = "Games", iconSymbol = "🎮", category = VfsCategory.MULTIMEDIA))
+        workspaceDocks.add(ws3)
 
         // 2. BOTTOM LEFT DOCK (Running Tasks Stack - Grows Upwards)
         initRunningStackDefaults()
@@ -394,9 +443,10 @@ object DockManager {
             editor.putInt(KEY_ICON_SIZE, tileIconSizeDp)
             editor.putBoolean(KEY_LAYOUT_LOCKED, isLayoutLocked)
             editor.putInt(KEY_WORKSPACE_INDEX, currentWorkspaceIndex)
+            editor.putInt(KEY_NUM_WORKSPACES, workspaceDocks.size)
             editor.putString(KEY_ACCENT_COLOR, accentColorHex)
 
-            for (w in 0 until NUM_WORKSPACES) {
+            for (w in 0 until workspaceDocks.size) {
                 val jsonWs = JSONArray()
                 workspaceDocks[w].forEach { jsonWs.put(serializeTile(it)) }
                 editor.putString(KEY_WORKSPACE_PREFIX + w, jsonWs.toString())
@@ -444,6 +494,7 @@ object DockManager {
     private fun restoreState(context: Context, prefs: android.content.SharedPreferences) {
         val pm = context.packageManager
         accentColorHex = prefs.getString(KEY_ACCENT_COLOR, "#FFFFFF") ?: "#FFFFFF"
+        val numWorkspaces = prefs.getInt(KEY_NUM_WORKSPACES, 3).coerceAtLeast(1)
 
         fun parseList(jsonStr: String, targetList: MutableList<DockTile>) {
             targetList.clear()
@@ -491,11 +542,14 @@ object DockManager {
             }
         }
 
-        for (w in 0 until NUM_WORKSPACES) {
+        workspaceDocks.clear()
+        for (w in 0 until numWorkspaces) {
+            val list = mutableListOf<DockTile>()
             val wsJson = prefs.getString(KEY_WORKSPACE_PREFIX + w, null)
             if (wsJson != null) {
-                parseList(wsJson, workspaceDocks[w])
+                parseList(wsJson, list)
             }
+            workspaceDocks.add(list)
         }
 
         val bottomJson = prefs.getString(KEY_BOTTOM, null)

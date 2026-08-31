@@ -23,6 +23,10 @@ StepLauncher supports multiple virtual Workspaces (Workspace 1, Workspace 2, Wor
 - **Workspace Switching**:
   - **Horizontal Swipe Left (`←`)**: Switches to the next workspace (e.g. Workspace 1 → Workspace 2).
   - **Horizontal Swipe Right (`→`)**: Switches to the previous workspace (e.g. Workspace 2 → Workspace 1).
+- **Workspace Creation & Deletion**:
+  - **`"➕ Add Workspace"`**: Instantiates a new workspace with a default paperclip Anchor (`Workspace N`) and switches to it immediately.
+  - **`"🗑️ Remove Current Workspace"`**: Removes the active workspace (if `index > 0`) and returns to the preceding workspace.
+  - **Workspace 1 Immutable Constraint**: **`Workspace 1` (index 0) can NEVER be removed.** The removal action is suppressed for Workspace 1.
 - **Workspace Docks**:
   - The right-handed dock (`topRightDockTiles`) dynamically renders tiles for the active workspace.
   - Adding or modifying tiles on Workspace 2 affects Workspace 2 only.

@@ -125,22 +125,42 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     private fun showDesktopBackgroundMenu() {
-        val lockLabel = if (DockManager.isLayoutLocked) "🔓 Unlock Layout" else "🔒 Lock Layout"
-        val options = arrayOf(
-            "ℹ️ About StepLauncher",
-            "⚙️ Dock Settings",
-            lockLabel
-        )
+        val isLocked = DockManager.isLayoutLocked
+        val lockLabel = if (isLocked) "🔓 Unlock Layout" else "🔒 Lock Layout"
+        val options = mutableListOf<String>()
+
+        if (!isLocked) {
+            options.add("➕ Add Workspace")
+            if (DockManager.currentWorkspaceIndex > 0) {
+                options.add("🗑️ Remove Current Workspace")
+            }
+        }
+        options.add("ℹ️ About StepLauncher")
+        options.add("⚙️ Dock Settings")
+        options.add(lockLabel)
 
         MaterialAlertDialogBuilder(this)
             .setTitle("❖ Desktop Surface Options")
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> showAboutDialog()
-                    1 -> startActivity(Intent(this, SettingsActivity::class.java))
-                    2 -> {
-                        val isLocked = DockManager.toggleLayoutLock(this)
-                        Toast.makeText(this, if (isLocked) "🔒 Layout Locked" else "🔓 Layout Unlocked", Toast.LENGTH_SHORT).show()
+            .setItems(options.toTypedArray()) { _, which ->
+                val selected = options[which]
+                when {
+                    selected.contains("Add Workspace") -> {
+                        val newIdx = DockManager.addWorkspace(this)
+                        Toast.makeText(this, "❖ Created & Switched to Workspace ${newIdx + 1}", Toast.LENGTH_SHORT).show()
+                    }
+                    selected.contains("Remove Current Workspace") -> {
+                        val removedIndex = DockManager.currentWorkspaceIndex + 1
+                        if (DockManager.removeCurrentWorkspace(this)) {
+                            Toast.makeText(this, "🗑️ Removed Workspace $removedIndex. Switched to Workspace ${DockManager.currentWorkspaceIndex + 1}", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, "Workspace 1 can never be removed!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    selected.contains("About StepLauncher") -> showAboutDialog()
+                    selected.contains("Dock Settings") -> startActivity(Intent(this, SettingsActivity::class.java))
+                    selected.contains("Lock Layout") || selected.contains("Unlock Layout") -> {
+                        val locked = DockManager.toggleLayoutLock(this)
+                        Toast.makeText(this, if (locked) "🔒 Layout Locked" else "🔓 Layout Unlocked", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -150,22 +170,23 @@ class LauncherActivity : AppCompatActivity() {
     private fun showAboutDialog() {
         val lockStatusStr = if (DockManager.isLayoutLocked) "🔒 Locked" else "🔓 Unlocked"
         val currentWs = DockManager.currentWorkspaceIndex + 1
+        val totalWs = DockManager.totalWorkspaces
         val message = """
             ❖ StepLauncher v2.0
             
             Unix-Inspired Modular Android Desktop System
             
             • Bottom Dock: Global Dock (All Workspaces)
-            • Right Dock: Workspace Dock (Workspace $currentWs of 3)
+            • Right Dock: Workspace Dock (Workspace $currentWs of $totalWs)
             • Left Stack: Running Processes Meta-Dock
             
             Gestures & Operational Status:
-            • Active Workspace: Workspace $currentWs of 3
+            • Active Workspace: Workspace $currentWs of $totalWs
             • Layout Lock: $lockStatusStr
             • Configured Icon Size: ${DockManager.tileIconSizeDp}dp
             • Pinch Gesture: Zoom Icon & Label Size (Unlocked)
             • Horizontal Swipe: Switch Workspaces (Left/Right)
-            • Desktop Long Press: Surface Context Menu
+            • Desktop Long Press: Surface Context Menu (Add/Remove Workspaces)
             • Tile 500ms Long Press: Tile Actions
         """.trimIndent()
 
@@ -264,6 +285,10 @@ class LauncherActivity : AppCompatActivity() {
             options.add("📱 Add App Launcher Shortcut")
             options.add("📊 Add System Telemetry DockApp")
             options.add("📁 Add VFS Category Link")
+            options.add("➕ Add Workspace")
+            if (DockManager.currentWorkspaceIndex > 0) {
+                options.add("🗑️ Remove Current Workspace")
+            }
             options.add("🔄 Reset Docks to Defaults")
         }
         options.add(lockLabel)
@@ -281,6 +306,18 @@ class LauncherActivity : AppCompatActivity() {
                     selected.contains("Add App Launcher") -> showAppPickerAddDialog(targetDock)
                     selected.contains("Add System Telemetry") -> showAddTelemetryDockAppDialog(targetDock)
                     selected.contains("Add VFS Category") -> showAddVfsCategoryDialog(targetDock)
+                    selected.contains("Add Workspace") -> {
+                        val newIdx = DockManager.addWorkspace(this)
+                        Toast.makeText(this, "❖ Created & Switched to Workspace ${newIdx + 1}", Toast.LENGTH_SHORT).show()
+                    }
+                    selected.contains("Remove Current Workspace") -> {
+                        val removedIndex = DockManager.currentWorkspaceIndex + 1
+                        if (DockManager.removeCurrentWorkspace(this)) {
+                            Toast.makeText(this, "🗑️ Removed Workspace $removedIndex. Switched to Workspace ${DockManager.currentWorkspaceIndex + 1}", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, "Workspace 1 can never be removed!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                     selected.contains("Reset Docks") -> {
                         DockManager.resetDocksToDefaults(this)
                         Toast.makeText(this, "Docks reset to default layout", Toast.LENGTH_SHORT).show()
