@@ -3295,6 +3295,7 @@ id fitStart
 id fitToContents
 id fitXY
 id fixed
+id fl_workspace_widget_canvas
 id flip
 id floating
 id forever

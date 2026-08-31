@@ -28,6 +28,7 @@ id btn_size_72
 id dock_bottom_container
 id dock_bottom_left_container
 id dock_top_right_container
+id fl_workspace_widget_canvas
 id iv_tile_app_icon
 id rv_dock_bottom
 id rv_dock_bottom_left

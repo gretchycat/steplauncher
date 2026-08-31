@@ -82,6 +82,17 @@ When **Layout Lock** is enabled (`isLayoutLocked == true`):
 | `RunningTask` | Yes | **Yes** | Yes | No | Yes | No (Use Close) | No |
 | `ExternalDockApp` | Yes | No | No | Yes | Yes | Yes | **Yes (Deletes Tile)** |
 | `InternalDockApp` | Yes | No | No | Yes | Yes | Yes | No |
+
+---
+
+## 6. Per-Workspace Traditional Android AppWidget Canvas
+
+StepLauncher features a dedicated background widget canvas layer ([`WorkspaceWidgetHostManager`](file:///data/data/com.termux/files/home/Projects/steplauncher/app-widget/src/main/java/com/steplauncher/widget/WorkspaceWidgetHostManager.kt)) positioned behind all docks.
+
+- **Host Infrastructure**: `AppWidgetHost` listening on host ID `2048`.
+- **Workspace Isolation**: Each workspace (Workspace 1, Workspace 2, etc.) maintains an independent list of pinned [`WorkspaceWidgetInfo`](file:///data/data/com.termux/files/home/Projects/steplauncher/app-widget/src/main/java/com/steplauncher/widget/WorkspaceWidgetInfo.kt) items.
+- **Widget Picker Integration**: Selecting `"🧩 Add Android Widget"` launches system `ACTION_APPWIDGET_PICK` intent, allowing any installed Android AppWidget (clock, weather, calendar, search) to be bound and placed onto the active workspace canvas.
+- **Persistence**: Per-workspace widget coordinates and provider IDs are stored in `SharedPreferences` (`steplauncher_workspace_widgets_prefs`).
 | `VfsCategoryLink` | Yes | No | No | Yes | Yes | Yes | No |
 
 *\* Operations marked with an asterisk are suppressed when `isLayoutLocked == true`.*

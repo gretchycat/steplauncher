@@ -4,6 +4,7 @@ package com.steplauncher.app.databinding;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,6 +31,9 @@ public final class ActivityLauncherBinding implements ViewBinding {
   public final LinearLayout dockTopRightContainer;
 
   @NonNull
+  public final FrameLayout flWorkspaceWidgetCanvas;
+
+  @NonNull
   public final RecyclerView rvDockBottom;
 
   @NonNull
@@ -40,12 +44,14 @@ public final class ActivityLauncherBinding implements ViewBinding {
 
   private ActivityLauncherBinding(@NonNull ConstraintLayout rootView,
       @NonNull LinearLayout dockBottomContainer, @NonNull LinearLayout dockBottomLeftContainer,
-      @NonNull LinearLayout dockTopRightContainer, @NonNull RecyclerView rvDockBottom,
-      @NonNull RecyclerView rvDockBottomLeft, @NonNull RecyclerView rvDockTopRight) {
+      @NonNull LinearLayout dockTopRightContainer, @NonNull FrameLayout flWorkspaceWidgetCanvas,
+      @NonNull RecyclerView rvDockBottom, @NonNull RecyclerView rvDockBottomLeft,
+      @NonNull RecyclerView rvDockTopRight) {
     this.rootView = rootView;
     this.dockBottomContainer = dockBottomContainer;
     this.dockBottomLeftContainer = dockBottomLeftContainer;
     this.dockTopRightContainer = dockTopRightContainer;
+    this.flWorkspaceWidgetCanvas = flWorkspaceWidgetCanvas;
     this.rvDockBottom = rvDockBottom;
     this.rvDockBottomLeft = rvDockBottomLeft;
     this.rvDockTopRight = rvDockTopRight;
@@ -96,6 +102,12 @@ public final class ActivityLauncherBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.fl_workspace_widget_canvas;
+      FrameLayout flWorkspaceWidgetCanvas = ViewBindings.findChildViewById(rootView, id);
+      if (flWorkspaceWidgetCanvas == null) {
+        break missingId;
+      }
+
       id = R.id.rv_dock_bottom;
       RecyclerView rvDockBottom = ViewBindings.findChildViewById(rootView, id);
       if (rvDockBottom == null) {
@@ -115,8 +127,8 @@ public final class ActivityLauncherBinding implements ViewBinding {
       }
 
       return new ActivityLauncherBinding((ConstraintLayout) rootView, dockBottomContainer,
-          dockBottomLeftContainer, dockTopRightContainer, rvDockBottom, rvDockBottomLeft,
-          rvDockTopRight);
+          dockBottomLeftContainer, dockTopRightContainer, flWorkspaceWidgetCanvas, rvDockBottom,
+          rvDockBottomLeft, rvDockTopRight);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

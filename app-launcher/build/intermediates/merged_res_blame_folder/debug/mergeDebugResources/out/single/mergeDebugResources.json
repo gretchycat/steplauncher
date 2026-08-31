@@ -28,16 +28,16 @@
         "source": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-main-34:/layout/item_dock_tile.xml"
     },
     {
-        "merged": "com.steplauncher.app.app-launcher-debug-32:/drawable_ic_dock_anchor_paperclip.png.flat",
-        "source": "com.steplauncher.app.app-launcher-main-34:/drawable/ic_dock_anchor_paperclip.png"
+        "merged": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-debug-32:/drawable_ic_dock_anchor_paperclip.png.flat",
+        "source": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-main-34:/drawable/ic_dock_anchor_paperclip.png"
+    },
+    {
+        "merged": "com.steplauncher.app.app-launcher-debug-32:/layout_activity_launcher.xml.flat",
+        "source": "com.steplauncher.app.app-launcher-main-34:/layout/activity_launcher.xml"
     },
     {
         "merged": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-debug-32:/drawable_ic_launcher.xml.flat",
         "source": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-main-34:/drawable/ic_launcher.xml"
-    },
-    {
-        "merged": "com.steplauncher.app.app-launcher-debug-32:/layout_item_dock_tile.xml.flat",
-        "source": "com.steplauncher.app.app-launcher-main-34:/layout/item_dock_tile.xml"
     },
     {
         "merged": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-debug-32:/layout_activity_launcher.xml.flat",

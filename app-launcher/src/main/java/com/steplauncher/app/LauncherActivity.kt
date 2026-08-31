@@ -1,5 +1,7 @@
 package com.steplauncher.app
 
+import android.app.Activity
+import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -10,8 +12,10 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -23,12 +27,46 @@ import com.steplauncher.core.renderer.DockManager
 import com.steplauncher.core.renderer.DockPosition
 import com.steplauncher.core.renderer.DockTile
 import com.steplauncher.core.vfs.VfsCategory
+import com.steplauncher.widget.WorkspaceWidgetHostManager
+import com.steplauncher.widget.WorkspaceWidgetInfo
 
 class LauncherActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityLauncherBinding
     private lateinit var scaleGestureDetector: ScaleGestureDetector
     private lateinit var gestureDetector: GestureDetector
+
+    private var pendingAppWidgetId: Int = -1
+
+    private val widgetPickLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK && pendingAppWidgetId != -1) {
+            val data = result.data
+            val appWidgetId = data?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, pendingAppWidgetId) ?: pendingAppWidgetId
+            val providerInfo = WorkspaceWidgetHostManager.getAppWidgetProviderInfo(appWidgetId)
+            
+            if (providerInfo != null) {
+                val widgetInfo = WorkspaceWidgetInfo(
+                    id = "widget_${System.currentTimeMillis()}",
+                    appWidgetId = appWidgetId,
+                    workspaceIndex = DockManager.currentWorkspaceIndex,
+                    providerPackageName = providerInfo.provider.packageName,
+                    providerClassName = providerInfo.provider.className,
+                    xDp = 16,
+                    yDp = 16,
+                    widthDp = (providerInfo.minWidth / resources.displayMetrics.density).toInt().coerceAtLeast(180),
+                    heightDp = (providerInfo.minHeight / resources.displayMetrics.density).toInt().coerceAtLeast(120)
+                )
+                WorkspaceWidgetHostManager.addWidget(widgetInfo, this)
+                renderWorkspaceWidgetCanvas(DockManager.currentWorkspaceIndex)
+                Toast.makeText(this, "🧩 Added Android Widget to Workspace ${DockManager.currentWorkspaceIndex + 1}", Toast.LENGTH_SHORT).show()
+            }
+        } else if (pendingAppWidgetId != -1) {
+            WorkspaceWidgetHostManager.deleteAppWidgetId(pendingAppWidgetId, this)
+        }
+        pendingAppWidgetId = -1
+    }
 
     private val dockChangeListener = {
         runOnUiThread {
@@ -41,14 +79,26 @@ class LauncherActivity : AppCompatActivity() {
         binding = ActivityLauncherBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Initialize default dock configurations
+        // Initialize default dock configurations and widget host
         DockManager.initializeDefaults(this)
+        WorkspaceWidgetHostManager.init(this)
+
         DockManager.addChangeListener(dockChangeListener)
 
         setupWindowInsets()
         setupRecyclerViews()
         setupGestureDetectors()
         refreshDocks()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        WorkspaceWidgetHostManager.startListening()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        WorkspaceWidgetHostManager.stopListening()
     }
 
     override fun onDestroy() {
@@ -58,20 +108,8 @@ class LauncherActivity : AppCompatActivity() {
 
     private fun setupWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            val statusBarTop = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            val navBarBottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
-            val cutoutTop = insets.getInsets(WindowInsetsCompat.Type.displayCutout()).top
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-
-            val topPadding = maxOf(statusBarTop, cutoutTop)
-            val bottomPadding = navBarBottom
-
-            view.setPadding(
-                systemBars.left,
-                topPadding,
-                systemBars.right,
-                bottomPadding
-            )
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
     }
@@ -88,39 +126,32 @@ class LauncherActivity : AppCompatActivity() {
         })
 
         gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onLongPress(e: MotionEvent) {
-                showDesktopBackgroundMenu()
-            }
-
-            override fun onFling(
-                e1: MotionEvent?,
-                e2: MotionEvent,
-                velocityX: Float,
-                velocityY: Float
-            ): Boolean {
+            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
                 if (e1 == null) return false
                 val diffX = e2.x - e1.x
                 val diffY = e2.y - e1.y
-                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 100 && Math.abs(velocityX) > 100) {
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 120 && Math.abs(velocityX) > 200) {
                     if (diffX < 0) {
-                        // Swipe Left -> Next Workspace
                         DockManager.nextWorkspace(this@LauncherActivity)
-                        Toast.makeText(this@LauncherActivity, "❖ Switched to Workspace ${DockManager.currentWorkspaceIndex + 1}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@LauncherActivity, "❖ Workspace ${DockManager.currentWorkspaceIndex + 1} of ${DockManager.totalWorkspaces}", Toast.LENGTH_SHORT).show()
                     } else {
-                        // Swipe Right -> Prev Workspace
                         DockManager.prevWorkspace(this@LauncherActivity)
-                        Toast.makeText(this@LauncherActivity, "❖ Switched to Workspace ${DockManager.currentWorkspaceIndex + 1}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@LauncherActivity, "❖ Workspace ${DockManager.currentWorkspaceIndex + 1} of ${DockManager.totalWorkspaces}", Toast.LENGTH_SHORT).show()
                     }
                     return true
                 }
                 return false
             }
+
+            override fun onLongPress(e: MotionEvent) {
+                showDesktopBackgroundMenu()
+            }
         })
 
         binding.root.setOnTouchListener { _, event ->
-            val scaleHandled = scaleGestureDetector.onTouchEvent(event)
-            val gestureHandled = gestureDetector.onTouchEvent(event)
-            scaleHandled || gestureHandled
+            scaleGestureDetector.onTouchEvent(event)
+            gestureDetector.onTouchEvent(event)
+            true
         }
     }
 
@@ -130,6 +161,7 @@ class LauncherActivity : AppCompatActivity() {
         val options = mutableListOf<String>()
 
         if (!isLocked) {
+            options.add("🧩 Add Android Widget")
             options.add("➕ Add Workspace")
             if (DockManager.currentWorkspaceIndex > 0) {
                 options.add("🗑️ Remove Current Workspace")
@@ -144,6 +176,7 @@ class LauncherActivity : AppCompatActivity() {
             .setItems(options.toTypedArray()) { _, which ->
                 val selected = options[which]
                 when {
+                    selected.contains("Add Android Widget") -> launchWidgetPicker()
                     selected.contains("Add Workspace") -> {
                         val newIdx = DockManager.addWorkspace(this)
                         Toast.makeText(this, "❖ Created & Switched to Workspace ${newIdx + 1}", Toast.LENGTH_SHORT).show()
@@ -167,6 +200,19 @@ class LauncherActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun launchWidgetPicker() {
+        if (DockManager.isLayoutLocked) return
+        pendingAppWidgetId = WorkspaceWidgetHostManager.allocateAppWidgetId()
+        val pickIntent = Intent(AppWidgetManager.ACTION_APPWIDGET_PICK).apply {
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, pendingAppWidgetId)
+        }
+        try {
+            widgetPickLauncher.launch(pickIntent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "AppWidget picker not available on this device", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun showAboutDialog() {
         val lockStatusStr = if (DockManager.isLayoutLocked) "🔒 Locked" else "🔓 Unlocked"
         val currentWs = DockManager.currentWorkspaceIndex + 1
@@ -179,6 +225,7 @@ class LauncherActivity : AppCompatActivity() {
             • Bottom Dock: Global Dock (All Workspaces)
             • Right Dock: Workspace Dock (Workspace $currentWs of $totalWs)
             • Left Stack: Running Processes Meta-Dock
+            • Background Canvas: Per-Workspace Android AppWidgets
             
             Gestures & Operational Status:
             • Active Workspace: Workspace $currentWs of $totalWs
@@ -186,8 +233,8 @@ class LauncherActivity : AppCompatActivity() {
             • Configured Icon Size: ${DockManager.tileIconSizeDp}dp
             • Pinch Gesture: Zoom Icon & Label Size (Unlocked)
             • Horizontal Swipe: Switch Workspaces (Left/Right)
-            • Desktop Long Press: Surface Context Menu (Add/Remove Workspaces)
-            • Tile 500ms Long Press: Tile Actions
+            • Desktop Long Press: Add Widgets / Add-Remove Workspaces
+            • Tile 500ms Long Press: Tile Context Actions
         """.trimIndent()
 
         MaterialAlertDialogBuilder(this)
@@ -198,20 +245,18 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerViews() {
-        // Bottom-Left Dock: Running Tasks Stack (Vertical, Grows UPWARDS from bottom left)
         val bottomLeftLayoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, true).apply {
             stackFromEnd = true
         }
         binding.rvDockBottomLeft.layoutManager = bottomLeftLayoutManager
-
-        // Top-Right Dock: Workspace Dock (Vertical)
         binding.rvDockTopRight.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-
-        // Bottom Main Dock: Global Dock (Horizontal)
         binding.rvDockBottom.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
     }
 
     private fun refreshDocks() {
+        // Render active workspace widget canvas
+        renderWorkspaceWidgetCanvas(DockManager.currentWorkspaceIndex)
+
         // Bottom-Left Dock: Running Tasks Stack
         binding.rvDockBottomLeft.adapter = DockTileAdapter(
             tiles = DockManager.bottomLeftDockTiles,
@@ -232,6 +277,45 @@ class LauncherActivity : AppCompatActivity() {
             onTileClick = { tile -> handleTileClick(tile, DockPosition.BOTTOM) },
             onTileLongClickMenu = { tile, _ -> handleTileLongClickMenu(tile, DockPosition.BOTTOM) }
         )
+    }
+
+    private fun renderWorkspaceWidgetCanvas(workspaceIndex: Int) {
+        binding.flWorkspaceWidgetCanvas.removeAllViews()
+        val widgets = WorkspaceWidgetHostManager.getWidgetsForWorkspace(workspaceIndex)
+        val density = resources.displayMetrics.density
+
+        for (info in widgets) {
+            val hostView = WorkspaceWidgetHostManager.createHostView(this, info) ?: continue
+            val widthPx = (info.widthDp * density).toInt()
+            val heightPx = (info.heightDp * density).toInt()
+            val xPx = (info.xDp * density).toInt()
+            val yPx = (info.yDp * density).toInt()
+
+            val lp = FrameLayout.LayoutParams(widthPx, heightPx).apply {
+                leftMargin = xPx
+                topMargin = yPx
+            }
+            hostView.layoutParams = lp
+
+            // Long-press handler to remove widget from workspace
+            hostView.setOnLongClickListener {
+                if (!DockManager.isLayoutLocked) {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle("🧩 Remove Android Widget")
+                        .setMessage("Remove this widget from Workspace ${workspaceIndex + 1}?")
+                        .setPositiveButton("Remove") { _, _ ->
+                            WorkspaceWidgetHostManager.deleteAppWidgetId(info.appWidgetId, this)
+                            renderWorkspaceWidgetCanvas(workspaceIndex)
+                            Toast.makeText(this, "Widget removed", Toast.LENGTH_SHORT).show()
+                        }
+                        .setNegativeButton("Cancel", null)
+                        .show()
+                    true
+                } else false
+            }
+
+            binding.flWorkspaceWidgetCanvas.addView(hostView)
+        }
     }
 
     private fun handleTileClick(tile: DockTile, position: DockPosition) {
@@ -282,6 +366,7 @@ class LauncherActivity : AppCompatActivity() {
 
         if (!isLocked) {
             options.add("✏️ Edit Title & Icon")
+            options.add("🧩 Add Android Widget")
             options.add("📱 Add App Launcher Shortcut")
             options.add("📊 Add System Telemetry DockApp")
             options.add("📁 Add VFS Category Link")
@@ -303,6 +388,7 @@ class LauncherActivity : AppCompatActivity() {
                 val selected = options[which]
                 when {
                     selected.contains("Edit Title") && anchorTile != null -> showEditTileDialog(anchorTile)
+                    selected.contains("Add Android Widget") -> launchWidgetPicker()
                     selected.contains("Add App Launcher") -> showAppPickerAddDialog(targetDock)
                     selected.contains("Add System Telemetry") -> showAddTelemetryDockAppDialog(targetDock)
                     selected.contains("Add VFS Category") -> showAddVfsCategoryDialog(targetDock)
@@ -337,55 +423,59 @@ class LauncherActivity : AppCompatActivity() {
         val isLocked = DockManager.isLayoutLocked
         val actions = mutableListOf<String>()
 
-        // 1. Top-level launch / focus actions
         when (tile) {
             is DockTile.AppShortcut -> {
-                actions.add("▶️ Launch Application")
+                actions.add("🚀 Launch Application")
                 if (!isLocked) {
-                    actions.add("✏️ Edit Title & Icon")
                     actions.add("↔️ Move to Dock...")
+                    actions.add("✏️ Edit Title & Icon")
+                    actions.add("🗑️ Remove from Dock")
+                }
+                if (!isInternalSystemPkg(tile.packageName)) {
+                    actions.add("ℹ️ System App Info")
+                    actions.add("📦 Uninstall Application")
                 }
             }
             is DockTile.RunningTask -> {
-                actions.add("▶️ Switch / Focus Task")
-                actions.add("⏹️ Close / Terminate Task")
+                actions.add("🔍 Focus Running Process")
                 if (!isLocked) {
                     actions.add("📌 Copy to Dock...")
-                    actions.add("✏️ Edit Title & Icon")
+                }
+                actions.add("❌ Terminate Process")
+                if (!isInternalSystemPkg(tile.packageName)) {
+                    actions.add("ℹ️ System App Info")
+                    actions.add("📦 Uninstall Application")
                 }
             }
-            else -> {
+            is DockTile.VfsCategoryLink -> {
+                actions.add("📂 Open VFS Category")
                 if (!isLocked) {
-                    actions.add("✏️ Edit Title & Icon")
                     actions.add("↔️ Move to Dock...")
+                    actions.add("✏️ Edit Title & Icon")
+                    actions.add("🗑️ Remove from Dock")
                 }
             }
-        }
-
-        // 2. System App Info and Uninstall Application ONLY apply to installed external apps
-        val externalPkgName = when (tile) {
-            is DockTile.AppShortcut -> tile.packageName
-            is DockTile.ExternalDockApp -> tile.descriptor.packageName
-            else -> null
-        }
-
-        val isInternalSystemPkg = externalPkgName == null ||
-                externalPkgName.startsWith("system.") ||
-                externalPkgName.startsWith("module.") ||
-                externalPkgName.startsWith("com.steplauncher")
-
-        if ((tile is DockTile.AppShortcut || tile is DockTile.ExternalDockApp) &&
-            !externalPkgName.isNullOrEmpty() &&
-            externalPkgName.contains(".") &&
-            !isInternalSystemPkg
-        ) {
-            actions.add("ℹ️ System App Info")
-            actions.add("📦 Uninstall Application") // Uninstall automatically deletes tile whether locked or not!
-        }
-
-        // 3. Remove option for non-running tiles (only available when unlocked)
-        if (tile !is DockTile.RunningTask && !isLocked) {
-            actions.add("🗑️ Remove from Dock")
+            is DockTile.InternalDockApp -> {
+                actions.add("⚙️ Configure DockApp")
+                if (!isLocked) {
+                    actions.add("↔️ Move to Dock...")
+                    actions.add("✏️ Edit Title & Icon")
+                    actions.add("🗑️ Remove from Dock")
+                }
+            }
+            is DockTile.ExternalDockApp -> {
+                actions.add("🚀 Open External DockApp")
+                if (!isLocked) {
+                    actions.add("↔️ Move to Dock...")
+                    actions.add("✏️ Edit Title & Icon")
+                    actions.add("🗑️ Remove from Dock")
+                }
+                if (!isInternalSystemPkg(tile.descriptor.packageName)) {
+                    actions.add("ℹ️ System App Info")
+                    actions.add("📦 Uninstall Application")
+                }
+            }
+            else -> {}
         }
 
         MaterialAlertDialogBuilder(this)
@@ -393,200 +483,114 @@ class LauncherActivity : AppCompatActivity() {
             .setItems(actions.toTypedArray()) { _, which ->
                 val selected = actions[which]
                 when {
-                    selected.contains("Launch Application") && tile is DockTile.AppShortcut -> {
-                        if (tile.launchIntent != null) {
-                            try { startActivity(tile.launchIntent) } catch (e: Exception) {}
-                        }
-                        DockManager.launchAndAddToRunningStack(tile.title, tile.iconSymbol, tile.packageName, tile.launchIntent)
-                    }
-
-                    selected.contains("Switch / Focus Task") && tile is DockTile.RunningTask -> {
-                        if (tile.launchIntent != null) {
-                            try { startActivity(tile.launchIntent) } catch (e: Exception) {}
-                        }
-                        Toast.makeText(this, "Focused task: ${tile.title}", Toast.LENGTH_SHORT).show()
-                    }
-
-                    selected.contains("Close / Terminate Task") && tile is DockTile.RunningTask -> {
-                        DockManager.removeTile(tile, this)
-                        Toast.makeText(this, "Terminated task: ${tile.title}", Toast.LENGTH_SHORT).show()
-                    }
-
-                    selected.contains("Copy to Dock...") && tile is DockTile.RunningTask -> {
-                        showCopyToDockListerDialog(tile)
-                    }
-
-                    selected.contains("Move to Dock...") -> {
-                        showMoveToDockListerDialog(tile, currentDock)
-                    }
-
+                    selected.contains("Launch Application") -> handleTileClick(tile, currentDock)
+                    selected.contains("Focus Running Process") -> handleTileClick(tile, currentDock)
+                    selected.contains("Open VFS Category") -> handleTileClick(tile, currentDock)
+                    selected.contains("Open External DockApp") -> handleTileClick(tile, currentDock)
+                    selected.contains("Configure DockApp") -> handleTileClick(tile, currentDock)
+                    selected.contains("Move to Dock") -> showMoveTileDialog(tile, currentDock)
+                    selected.contains("Copy to Dock") && tile is DockTile.RunningTask -> showCopyTaskDialog(tile)
                     selected.contains("Edit Title") -> showEditTileDialog(tile)
-
                     selected.contains("Remove from Dock") -> {
                         DockManager.removeTile(tile, this)
-                        Toast.makeText(this, "Removed ${tile.title}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Removed from dock", Toast.LENGTH_SHORT).show()
                     }
-
-                    selected.contains("Uninstall") && externalPkgName != null -> {
-                        DockManager.removeTile(tile, this) // Automatically removes from dock whether locked or not!
-                        val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:$externalPkgName"))
-                        startActivity(intent)
+                    selected.contains("Terminate Process") -> {
+                        DockManager.removeTile(tile, this)
+                        Toast.makeText(this, "Terminated process", Toast.LENGTH_SHORT).show()
                     }
-
-                    selected.contains("App Info") && externalPkgName != null -> {
-                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                            data = Uri.parse("package:$externalPkgName")
-                        }
-                        startActivity(intent)
-                    }
+                    selected.contains("System App Info") -> openSystemAppInfo(tile)
+                    selected.contains("Uninstall Application") -> uninstallApplication(tile)
                 }
             }
             .show()
     }
 
-    private fun showMoveToDockListerDialog(tile: DockTile, currentDock: DockPosition) {
-        if (DockManager.isLayoutLocked) return
-        val dockOptions = mutableListOf<Pair<String, DockPosition>>()
+    private fun isInternalSystemPkg(pkgName: String): Boolean {
+        return pkgName.startsWith("system.") ||
+               pkgName.startsWith("module.") ||
+               pkgName.startsWith("com.steplauncher")
+    }
 
-        if (currentDock != DockPosition.TOP_RIGHT) {
-            dockOptions.add(Pair("❖ Workspace Dock", DockPosition.TOP_RIGHT))
+    private fun openSystemAppInfo(tile: DockTile) {
+        val pkgName = when (tile) {
+            is DockTile.AppShortcut -> tile.packageName
+            is DockTile.RunningTask -> tile.packageName
+            is DockTile.ExternalDockApp -> tile.descriptor.packageName
+            else -> null
         }
-        if (currentDock != DockPosition.BOTTOM) {
-            dockOptions.add(Pair("❖ Global Bottom Dock", DockPosition.BOTTOM))
-        }
-
-        val labels = dockOptions.map { it.first }.toTypedArray()
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Move '${tile.title}' to Dock...")
-            .setItems(labels) { _, which ->
-                val targetDock = dockOptions[which].second
-                val sourceList = DockManager.getTilesForPosition(currentDock)
-                val fromIndex = sourceList.indexOf(tile)
-                if (fromIndex != -1) {
-                    DockManager.moveTileBetweenDocks(currentDock, fromIndex, targetDock, 999, this)
-                    Toast.makeText(this, "Moved ${tile.title} to ${targetDock.title}", Toast.LENGTH_SHORT).show()
+        if (pkgName != null) {
+            try {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", pkgName, null)
                 }
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Unable to open App Info for $pkgName", Toast.LENGTH_SHORT).show()
             }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showCopyToDockListerDialog(runningTask: DockTile.RunningTask) {
-        if (DockManager.isLayoutLocked) return
-        val dockOptions = arrayOf(
-            Pair("❖ Workspace Dock", DockPosition.TOP_RIGHT),
-            Pair("❖ Global Bottom Dock", DockPosition.BOTTOM)
-        )
-
-        val labels = dockOptions.map { it.first }.toTypedArray()
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Copy '${runningTask.title}' Launcher to...")
-            .setItems(labels) { _, which ->
-                val targetDock = dockOptions[which].second
-                DockManager.createLauncherFromRunningTask(runningTask, targetDock, this)
-                Toast.makeText(this, "Permanently added ${runningTask.title} launcher to ${targetDock.title}", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showAppPickerAddDialog(targetDock: DockPosition) {
-        if (DockManager.isLayoutLocked) return
-        val pm = packageManager
-        val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
-            addCategory(Intent.CATEGORY_LAUNCHER)
         }
-        val apps = pm.queryIntentActivities(mainIntent, 0)
-            .sortedBy { it.loadLabel(pm).toString() }
-
-        val labels = apps.map { it.loadLabel(pm).toString() }.toTypedArray()
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Add App Launcher Shortcut")
-            .setItems(labels) { _, which ->
-                val resolveInfo = apps[which]
-                val pkg = resolveInfo.activityInfo.packageName
-                val label = resolveInfo.loadLabel(pm).toString()
-                val launchIntent = pm.getLaunchIntentForPackage(pkg)
-
-                val newTile = DockTile.AppShortcut(
-                    id = "app_" + System.currentTimeMillis(),
-                    title = label,
-                    iconSymbol = "📱",
-                    packageName = pkg,
-                    launchIntent = launchIntent
-                )
-
-                DockManager.getTilesForPosition(targetDock).add(newTile)
-                DockManager.notifyChanged(this)
-                Toast.makeText(this, "Added $label to ${targetDock.title}", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
     }
 
-    private fun showAddTelemetryDockAppDialog(targetDock: DockPosition) {
-        if (DockManager.isLayoutLocked) return
-        val options = arrayOf("⏰ wmclock (Clock & Cal)", "⚡ wmbattery (Battery Mon)", "📊 wmmon (CPU & Net)", "🌐 wmnet (Throughput)")
+    private fun uninstallApplication(tile: DockTile) {
+        val pkgName = when (tile) {
+            is DockTile.AppShortcut -> tile.packageName
+            is DockTile.RunningTask -> tile.packageName
+            is DockTile.ExternalDockApp -> tile.descriptor.packageName
+            else -> null
+        }
+        if (pkgName != null) {
+            try {
+                DockManager.removeTile(tile, this)
+                val intent = Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
+                    data = Uri.fromParts("package", pkgName, null)
+                    putExtra(Intent.EXTRA_RETURN_RESULT, true)
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Unable to launch uninstaller for $pkgName", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun showMoveTileDialog(tile: DockTile, fromDock: DockPosition) {
+        val options = arrayOf("Top Right Workspace Dock", "Bottom Global Dock")
         MaterialAlertDialogBuilder(this)
-            .setTitle("Add Telemetry DockApp")
+            .setTitle("Move Tile To:")
             .setItems(options) { _, which ->
-                val (id, title, icon, type) = when (which) {
-                    0 -> Quad("wmclock_${System.currentTimeMillis()}", "wmclock", "⏰", "WMCLOCK")
-                    1 -> Quad("wmbattery_${System.currentTimeMillis()}", "wmbattery", "⚡", "WMBATTERY")
-                    2 -> Quad("wmmon_${System.currentTimeMillis()}", "wmmon", "📊", "WMMON")
-                    else -> Quad("wmnet_${System.currentTimeMillis()}", "wmnet", "🌐", "WMNET")
+                val targetDock = if (which == 0) DockPosition.TOP_RIGHT else DockPosition.BOTTOM
+                val fromList = DockManager.getTilesForPosition(fromDock)
+                val fromIndex = fromList.indexOf(tile)
+                if (fromIndex != -1) {
+                    DockManager.moveTileBetweenDocks(fromDock, fromIndex, targetDock, 0, this)
                 }
-                val newTile = DockTile.InternalDockApp(id, title, icon, type)
-                DockManager.getTilesForPosition(targetDock).add(newTile)
-                DockManager.notifyChanged(this)
             }
             .show()
     }
 
-    private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
-
-    private fun showAddVfsCategoryDialog(targetDock: DockPosition) {
-        if (DockManager.isLayoutLocked) return
-        val categories = VfsCategory.values()
-        val labels = categories.map { "${it.iconSymbol} ${it.displayName}" }.toTypedArray()
-
+    private fun showCopyTaskDialog(runningTask: DockTile.RunningTask) {
+        val options = arrayOf("Top Right Workspace Dock", "Bottom Global Dock")
         MaterialAlertDialogBuilder(this)
-            .setTitle("Add VFS Category Link")
-            .setItems(labels) { _, which ->
-                val cat = categories[which]
-                val newTile = DockTile.VfsCategoryLink(
-                    id = "vfs_${cat.name}_${System.currentTimeMillis()}",
-                    title = cat.displayName,
-                    iconSymbol = cat.iconSymbol,
-                    category = cat
-                )
-                DockManager.getTilesForPosition(targetDock).add(newTile)
-                DockManager.notifyChanged(this)
+            .setTitle("Copy Running Task To:")
+            .setItems(options) { _, which ->
+                val targetDock = if (which == 0) DockPosition.TOP_RIGHT else DockPosition.BOTTOM
+                DockManager.createLauncherFromRunningTask(runningTask, targetDock, this)
+                Toast.makeText(this, "Permanently added launcher to target dock!", Toast.LENGTH_SHORT).show()
             }
             .show()
-    }
-
-    private fun showAddDockAppDialog(targetDock: DockPosition) {
-        if (DockManager.isLayoutLocked) return
-        showDockAnchorLongPressMenu(targetDock)
     }
 
     private fun showEditTileDialog(tile: DockTile) {
-        if (DockManager.isLayoutLocked) return
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(40, 20, 40, 20)
         }
 
         val etTitle = EditText(this).apply {
-            hint = "Title"
+            hint = "Tile Title"
             setText(tile.title)
         }
         val etIcon = EditText(this).apply {
-            hint = "Icon Symbol (Emoji / Text)"
+            hint = "Emoji / Icon Symbol"
             setText(tile.iconSymbol)
         }
 
@@ -594,17 +598,99 @@ class LauncherActivity : AppCompatActivity() {
         layout.addView(etIcon)
 
         MaterialAlertDialogBuilder(this)
-            .setTitle("Edit Tile: ${tile.title}")
+            .setTitle("✏️ Edit Tile Details")
             .setView(layout)
             .setPositiveButton("Save") { _, _ ->
-                val newTitle = etTitle.text.toString().trim()
-                val newIcon = etIcon.text.toString().trim()
-                if (newTitle.isNotEmpty()) {
-                    DockManager.updateTile(tile.id, newTitle, newIcon.ifEmpty { "📱" }, this)
-                    Toast.makeText(this, "Tile updated!", Toast.LENGTH_SHORT).show()
-                }
+                val newTitle = etTitle.text.toString().ifEmpty { tile.title }
+                val newIcon = etIcon.text.toString().ifEmpty { tile.iconSymbol }
+                DockManager.updateTile(tile.id, newTitle, newIcon, this)
             }
             .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showAddDockAppDialog(targetDock: DockPosition) {
+        val options = arrayOf(
+            "📱 App Launcher Shortcut",
+            "📊 System Telemetry DockApp",
+            "📁 VFS Category Link"
+        )
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("➕ Add Dock Item")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showAppPickerAddDialog(targetDock)
+                    1 -> showAddTelemetryDockAppDialog(targetDock)
+                    2 -> showAddVfsCategoryDialog(targetDock)
+                }
+            }
+            .show()
+    }
+
+    private fun showAppPickerAddDialog(targetDock: DockPosition) {
+        val pm = packageManager
+        val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
+        }
+        val resolveInfos = pm.queryIntentActivities(mainIntent, 0)
+            .sortedBy { it.loadLabel(pm).toString() }
+
+        val appNames = resolveInfos.map { it.loadLabel(pm).toString() }.toTypedArray()
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Select App to Add")
+            .setItems(appNames) { _, which ->
+                val selected = resolveInfos[which]
+                val label = selected.loadLabel(pm).toString()
+                val pkgName = selected.activityInfo.packageName
+                val launchIntent = pm.getLaunchIntentForPackage(pkgName)
+
+                val newTile = DockTile.AppShortcut(
+                    id = "app_" + System.currentTimeMillis(),
+                    title = label,
+                    iconSymbol = "📱",
+                    packageName = pkgName,
+                    launchIntent = launchIntent
+                )
+
+                val targetList = DockManager.getTilesForPosition(targetDock)
+                targetList.add(newTile)
+                DockManager.notifyChanged(this)
+            }
+            .show()
+    }
+
+    private fun showAddTelemetryDockAppDialog(targetDock: DockPosition) {
+        val newTile = DockTile.InternalDockApp(
+            id = "telemetry_" + System.currentTimeMillis(),
+            title = "Telemetry Mon",
+            iconSymbol = "📊",
+            moduleType = "TELEMETRY"
+        )
+        val targetList = DockManager.getTilesForPosition(targetDock)
+        targetList.add(newTile)
+        DockManager.notifyChanged(this)
+    }
+
+    private fun showAddVfsCategoryDialog(targetDock: DockPosition) {
+        val categories = VfsCategory.values()
+        val categoryNames = categories.map { "${it.iconSymbol} ${it.displayName}" }.toTypedArray()
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Select VFS Category Link")
+            .setItems(categoryNames) { _, which ->
+                val cat = categories[which]
+                val newTile = DockTile.VfsCategoryLink(
+                    id = "vfs_" + System.currentTimeMillis(),
+                    title = cat.displayName,
+                    iconSymbol = cat.iconSymbol,
+                    category = cat
+                )
+                val targetList = DockManager.getTilesForPosition(targetDock)
+                targetList.add(newTile)
+                DockManager.notifyChanged(this)
+            }
             .show()
     }
 }
