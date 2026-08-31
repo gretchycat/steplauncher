@@ -4,37 +4,41 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/bg_dark"
-    android:padding="16dp">
+    android:background="#0F172A"
+    android:padding="20dp">
 
-    <!-- Settings Header -->
+    <!-- Top Action Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="@drawable/bg_glass_dock_rail"
-        android:padding="12dp">
-
-        <TextView
-            android:id="@+id/btn_back"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="← "
-            android:textColor="@color/cyan_accent"
-            android:textSize="20sp"
-            android:paddingEnd="8dp" />
+        android:gravity="center_vertical">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="⚙️ DOCK &amp; LAUNCHER SETTINGS"
-            android:textColor="@color/text_primary"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.05" />
+            android:text="⚙️ Dock Configuration"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_close_settings"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✕ Close"
+            android:textColor="#FFFFFF" />
     </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Configure icon dimensions, text accent, graphic colors, and telemetry threshold alerts."
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -141,7 +145,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="🎨 Frosted Glass Accent Color Tint"
+                    android:text="🎨 Tile Background Tint"
                     android:textColor="@color/amber_accent"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -211,7 +215,68 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Section 3: Reset Defaults -->
+            <!-- Section 3: Text Accent & Graphic Palette -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_glass_center_canvas"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="✏️ Text Accent &amp; Graphic Palette"
+                    android:textColor="#00E5FF"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="12dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_theme_cyber"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="⚡ Cyber"
+                        android:textSize="9sp"
+                        android:textColor="#00E5FF"
+                        app:strokeColor="#00E5FF" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_theme_matrix"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:text="🟢 Matrix"
+                        android:textSize="9sp"
+                        android:textColor="#00E676"
+                        app:strokeColor="#00E676" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_theme_sunset"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:text="🌅 Sunset"
+                        android:textSize="9sp"
+                        android:textColor="#FF9100"
+                        app:strokeColor="#FF9100" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Section 4: Reset Defaults -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_reset_defaults"
                 android:layout_width="match_parent"

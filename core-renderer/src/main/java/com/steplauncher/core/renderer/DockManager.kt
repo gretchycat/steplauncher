@@ -18,6 +18,11 @@ object DockManager {
     private const val KEY_NUM_WORKSPACES = "key_num_workspaces"
     private const val KEY_WORKSPACE_PREFIX = "key_workspace_tiles_"
     private const val KEY_ACCENT_COLOR = "key_accent_color"
+    private const val KEY_TEXT_COLOR = "key_text_color"
+    private const val KEY_GRAPHIC_COLOR = "key_graphic_color"
+    private const val KEY_COLOR_HIGH = "key_color_high"
+    private const val KEY_COLOR_MED = "key_color_med"
+    private const val KEY_COLOR_LOW = "key_color_low"
     private const val KEY_CLOCK_TIME_FMT = "key_clock_time_fmt"
     private const val KEY_CLOCK_DATE_FMT = "key_clock_date_fmt"
 
@@ -25,7 +30,12 @@ object DockManager {
     var tileIconSizeDp: Int = 56
     var isLayoutLocked: Boolean = false
     var currentWorkspaceIndex: Int = 0
-    var accentColorHex: String = "#FFFFFF" // Default Frosted White
+    var accentColorHex: String = "#FFFFFF"   // Default Frosted White
+    var textColorHex: String = "#FFFFFF"     // Text Accent Color
+    var graphicColorHex: String = "#00E5FF"  // Graphic Accent Color
+    var colorHighHex: String = "#FF5252"     // High Threshold Alert Color
+    var colorMedHex: String = "#FFD700"      // Medium Threshold Color
+    var colorLowHex: String = "#00E676"      // Low Threshold Normal Color
     var clockTimeFormat: String = "HH:mm"
     var clockDateFormat: String = "EEE, MMM d"
 
@@ -132,6 +142,26 @@ object DockManager {
 
     fun updateAccentColor(colorHex: String, context: Context) {
         accentColorHex = colorHex
+        saveState(context)
+        notifyChanged(context)
+    }
+
+    fun updateThemeColors(
+        accentHex: String = accentColorHex,
+        textHex: String = textColorHex,
+        graphicHex: String = graphicColorHex,
+        highHex: String = colorHighHex,
+        medHex: String = colorMedHex,
+        lowHex: String = colorLowHex,
+        context: Context
+    ) {
+        accentColorHex = accentHex
+        textColorHex = textHex
+        graphicColorHex = graphicHex
+        colorHighHex = highHex
+        colorMedHex = medHex
+        colorLowHex = lowHex
+        saveState(context)
         notifyChanged(context)
     }
 
@@ -449,6 +479,11 @@ object DockManager {
             editor.putInt(KEY_WORKSPACE_INDEX, currentWorkspaceIndex)
             editor.putInt(KEY_NUM_WORKSPACES, workspaceDocks.size)
             editor.putString(KEY_ACCENT_COLOR, accentColorHex)
+            editor.putString(KEY_TEXT_COLOR, textColorHex)
+            editor.putString(KEY_GRAPHIC_COLOR, graphicColorHex)
+            editor.putString(KEY_COLOR_HIGH, colorHighHex)
+            editor.putString(KEY_COLOR_MED, colorMedHex)
+            editor.putString(KEY_COLOR_LOW, colorLowHex)
             editor.putString(KEY_CLOCK_TIME_FMT, clockTimeFormat)
             editor.putString(KEY_CLOCK_DATE_FMT, clockDateFormat)
 
@@ -499,6 +534,12 @@ object DockManager {
 
     private fun restoreState(context: Context, prefs: android.content.SharedPreferences) {
         val pm = context.packageManager
+        accentColorHex = prefs.getString(KEY_ACCENT_COLOR, "#FFFFFF") ?: "#FFFFFF"
+        textColorHex = prefs.getString(KEY_TEXT_COLOR, "#FFFFFF") ?: "#FFFFFF"
+        graphicColorHex = prefs.getString(KEY_GRAPHIC_COLOR, "#00E5FF") ?: "#00E5FF"
+        colorHighHex = prefs.getString(KEY_COLOR_HIGH, "#FF5252") ?: "#FF5252"
+        colorMedHex = prefs.getString(KEY_COLOR_MED, "#FFD700") ?: "#FFD700"
+        colorLowHex = prefs.getString(KEY_COLOR_LOW, "#00E676") ?: "#00E676"
         clockTimeFormat = prefs.getString(KEY_CLOCK_TIME_FMT, "HH:mm") ?: "HH:mm"
         clockDateFormat = prefs.getString(KEY_CLOCK_DATE_FMT, "EEE, MMM d") ?: "EEE, MMM d"
         val numWorkspaces = prefs.getInt(KEY_NUM_WORKSPACES, 3).coerceAtLeast(1)

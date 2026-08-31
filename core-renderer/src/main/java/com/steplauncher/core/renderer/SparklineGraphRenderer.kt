@@ -3,6 +3,7 @@ package com.steplauncher.core.renderer
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.DashPathEffect
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
@@ -26,15 +27,168 @@ object SparklineGraphRenderer {
     }
 
     /**
+     * Draws a high-resolution detailed telemetry graph with labelled X & Y axes for the dialog view.
+     */
+    fun drawDetailedTelemetryGraphWithAxes(
+        width: Int,
+        height: Int,
+        history: List<Int>,
+        title: String,
+        yUnit: String = "%",
+        graphicColorHex: String = "#00E5FF",
+        colorHighHex: String = "#FF5252",
+        colorMedHex: String = "#FFD700",
+        colorLowHex: String = "#00E676"
+    ): Bitmap {
+        val w = width.coerceAtLeast(300)
+        val h = height.coerceAtLeast(180)
+        val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        // Translucent background card
+        val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#20000000")
+            style = Paint.Style.FILL
+        }
+        canvas.drawRoundRect(RectF(0f, 0f, w.toFloat(), h.toFloat()), 20f, 20f, bgPaint)
+
+        val marginLeft = 65f
+        val marginRight = 25f
+        val marginTop = 40f
+        val marginBottom = 45f
+
+        val graphW = w - marginLeft - marginRight
+        val graphH = h - marginTop - marginBottom
+
+        // Draw Title
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 22f
+            isFakeBoldText = true
+        }
+        canvas.drawText(title, marginLeft, 28f, titlePaint)
+
+        // Dotted grid lines & Y-Axis Labels
+        val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#30FFFFFF")
+            style = Paint.Style.STROKE
+            strokeWidth = 1.5f
+            pathEffect = DashPathEffect(floatArrayOf(6f, 6f), 0f)
+        }
+
+        val axisLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#B0FFFFFF")
+            textSize = 15f
+            textAlign = Paint.Align.RIGHT
+        }
+
+        val yLevels = arrayOf(100, 75, 50, 25, 0)
+        yLevels.forEach { lvl ->
+            val ratio = lvl / 100f
+            val y = marginTop + graphH * (1f - ratio)
+            
+            // Grid line
+            val gridPath = Path().apply {
+                moveTo(marginLeft, y)
+                lineTo(w - marginRight, y)
+            }
+            canvas.drawPath(gridPath, gridPaint)
+
+            // Y-Axis label
+            canvas.drawText("$lvl$yUnit", marginLeft - 10f, y + 5f, axisLabelPaint)
+        }
+
+        // X-Axis Time Labels (-10m, -7.5m, -5m, -2.5m, NOW)
+        val xLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#B0FFFFFF")
+            textSize = 15f
+            textAlign = Paint.Align.CENTER
+        }
+        val xLabels = arrayOf("-10m", "-7.5m", "-5m", "-2.5m", "NOW")
+        xLabels.forEachIndexed { idx, label ->
+            val ratio = idx / (xLabels.size - 1).toFloat()
+            val x = marginLeft + graphW * ratio
+            canvas.drawText(label, x, h - 12f, xLabelPaint)
+        }
+
+        val dataRaw = subsampleHistory(history, 60)
+        if (dataRaw.isEmpty()) return bitmap
+
+        val data = if (dataRaw.size < 2) listOf(dataRaw.first(), dataRaw.first()) else dataRaw
+        val stepX = graphW / (data.size - 1).coerceAtLeast(1)
+
+        val linePath = Path()
+        val fillPath = Path()
+
+        val startX = marginLeft
+        val startY = marginTop + graphH * (1f - (data[0].coerceIn(0, 100) / 100f))
+
+        linePath.moveTo(startX, startY)
+        fillPath.moveTo(startX, marginTop + graphH)
+        fillPath.lineTo(startX, startY)
+
+        for (i in 1 until data.size) {
+            val x = startX + (i * stepX)
+            val y = marginTop + graphH * (1f - (data[i].coerceIn(0, 100) / 100f))
+            linePath.lineTo(x, y)
+            fillPath.lineTo(x, y)
+        }
+
+        val lastX = startX + ((data.size - 1) * stepX)
+        fillPath.lineTo(lastX, marginTop + graphH)
+        fillPath.close()
+
+        // Fill area under graph
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = LinearGradient(0f, marginTop, 0f, marginTop + graphH, Color.parseColor("#5000E5FF"), Color.parseColor("#0200E5FF"), Shader.TileMode.CLAMP)
+            style = Paint.Style.FILL
+        }
+        canvas.drawPath(fillPath, fillPaint)
+
+        // Line graph paint
+        val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor(graphicColorHex)
+            strokeWidth = 4f
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
+        canvas.drawPath(linePath, linePaint)
+
+        // Highlight latest point
+        val latestVal = data.last()
+        val latestColor = when {
+            latestVal >= 75 -> Color.parseColor(colorHighHex)
+            latestVal >= 40 -> Color.parseColor(colorMedHex)
+            else -> Color.parseColor(colorLowHex)
+        }
+        val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = latestColor
+            style = Paint.Style.FILL
+        }
+        val lastY = marginTop + graphH * (1f - (latestVal.coerceIn(0, 100) / 100f))
+        canvas.drawCircle(lastX, lastY, 7f, dotPaint)
+
+        return bitmap
+    }
+
+    /**
      * Draws a high-tech glowing CPU line sparkline graph.
      */
-    fun drawCpuLineGraph(width: Int, height: Int, history: List<Int>): Bitmap {
+    fun drawCpuLineGraph(
+        width: Int,
+        height: Int,
+        history: List<Int>,
+        graphicColorHex: String = "#00E5FF",
+        colorHighHex: String = "#FF5252",
+        colorMedHex: String = "#FFD700",
+        colorLowHex: String = "#00E676"
+    ): Bitmap {
         val w = width.coerceAtLeast(64)
         val h = height.coerceAtLeast(64)
         val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
-        // Dark translucent background card
         val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#30000000")
             style = Paint.Style.FILL
@@ -70,16 +224,14 @@ object SparklineGraphRenderer {
         fillPath.lineTo(lastX, h - paddingY)
         fillPath.close()
 
-        // Draw translucent gradient under line
         val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = LinearGradient(0f, paddingY, 0f, h - paddingY, Color.parseColor("#6000E5FF"), Color.parseColor("#0500E5FF"), Shader.TileMode.CLAMP)
             style = Paint.Style.FILL
         }
         canvas.drawPath(fillPath, fillPaint)
 
-        // Draw glowing line graph
         val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#00E5FF")
+            color = Color.parseColor(graphicColorHex)
             strokeWidth = 5f
             style = Paint.Style.STROKE
             strokeCap = Paint.Cap.ROUND
@@ -87,12 +239,18 @@ object SparklineGraphRenderer {
         }
         canvas.drawPath(path, linePaint)
 
-        // Draw active latest data point node
+        val latestVal = data.last()
+        val latestColor = when {
+            latestVal >= 75 -> Color.parseColor(colorHighHex)
+            latestVal >= 40 -> Color.parseColor(colorMedHex)
+            else -> Color.parseColor(colorLowHex)
+        }
+
         val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
+            color = latestColor
             style = Paint.Style.FILL
         }
-        val lastY = h - paddingY - (data.last().coerceIn(0, 100) / 100f * usableH)
+        val lastY = h - paddingY - (latestVal.coerceIn(0, 100) / 100f * usableH)
         canvas.drawCircle(lastX, lastY, 6f, dotPaint)
 
         return bitmap
@@ -101,7 +259,14 @@ object SparklineGraphRenderer {
     /**
      * Draws a segmented vertical RAM bar graph.
      */
-    fun drawMemoryBarGraph(width: Int, height: Int, percent: Int): Bitmap {
+    fun drawMemoryBarGraph(
+        width: Int,
+        height: Int,
+        percent: Int,
+        colorHighHex: String = "#FF5252",
+        colorMedHex: String = "#FFD700",
+        colorLowHex: String = "#00E676"
+    ): Bitmap {
         val w = width.coerceAtLeast(64)
         val h = height.coerceAtLeast(64)
         val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
@@ -122,8 +287,14 @@ object SparklineGraphRenderer {
 
         val activeBars = (percent.coerceIn(0, 100) * numBars / 100f).toInt().coerceIn(1, numBars)
 
+        val activeColor = when {
+            percent >= 80 -> colorHighHex
+            percent >= 50 -> colorMedHex
+            else -> colorLowHex
+        }
+
         val activePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            shader = LinearGradient(0f, h - marginY, 0f, marginY, Color.parseColor("#00E676"), Color.parseColor("#B2FF59"), Shader.TileMode.CLAMP)
+            shader = LinearGradient(0f, h - marginY, 0f, marginY, Color.parseColor(activeColor), Color.parseColor("#B2FF59"), Shader.TileMode.CLAMP)
             style = Paint.Style.FILL
         }
 
@@ -148,7 +319,14 @@ object SparklineGraphRenderer {
     /**
      * Draws a sleek circular arc storage gauge graph.
      */
-    fun drawStorageGaugeGraph(width: Int, height: Int, percent: Int): Bitmap {
+    fun drawStorageGaugeGraph(
+        width: Int,
+        height: Int,
+        percent: Int,
+        colorHighHex: String = "#FF5252",
+        colorMedHex: String = "#FFD700",
+        colorLowHex: String = "#00E676"
+    ): Bitmap {
         val w = width.coerceAtLeast(64)
         val h = height.coerceAtLeast(64)
         val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
@@ -164,7 +342,6 @@ object SparklineGraphRenderer {
         val strokeW = 10f
         val arcRect = RectF(margin, margin, w - margin, h - margin)
 
-        // Track paint
         val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#25FFFFFF")
             style = Paint.Style.STROKE
@@ -173,9 +350,14 @@ object SparklineGraphRenderer {
         }
         canvas.drawArc(arcRect, 135f, 270f, false, trackPaint)
 
-        // Gauge arc paint
+        val gaugeColor = when {
+            percent >= 85 -> colorHighHex
+            percent >= 60 -> colorMedHex
+            else -> colorLowHex
+        }
+
         val gaugePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#FFD700") // Amber Gold
+            color = Color.parseColor(gaugeColor)
             style = Paint.Style.STROKE
             strokeWidth = strokeW
             strokeCap = Paint.Cap.ROUND
@@ -184,7 +366,6 @@ object SparklineGraphRenderer {
         val sweepAngle = 270f * (percent.coerceIn(0, 100) / 100f)
         canvas.drawArc(arcRect, 135f, sweepAngle, false, gaugePaint)
 
-        // Percentage text in center
         val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textSize = h * 0.26f
@@ -199,7 +380,13 @@ object SparklineGraphRenderer {
     /**
      * Draws a dual Rx/Tx network pulse waveform graph.
      */
-    fun drawNetworkWaveGraph(width: Int, height: Int, rxHistory: List<Int>, txHistory: List<Int>): Bitmap {
+    fun drawNetworkWaveGraph(
+        width: Int,
+        height: Int,
+        rxHistory: List<Int>,
+        txHistory: List<Int>,
+        graphicColorHex: String = "#00E5FF"
+    ): Bitmap {
         val w = width.coerceAtLeast(64)
         val h = height.coerceAtLeast(64)
         val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
@@ -243,8 +430,7 @@ object SparklineGraphRenderer {
             canvas.drawPath(path, paint)
         }
 
-        // Rx = Downstream (Cyan upper wave), Tx = Upstream (Purple lower wave)
-        drawSeries(rxHistory, "#00E5FF", true)
+        drawSeries(rxHistory, graphicColorHex, true)
         drawSeries(txHistory, "#D500F9", false)
 
         return bitmap

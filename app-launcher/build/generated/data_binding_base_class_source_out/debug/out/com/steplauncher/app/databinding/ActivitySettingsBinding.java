@@ -21,7 +21,7 @@ public final class ActivitySettingsBinding implements ViewBinding {
   private final LinearLayout rootView;
 
   @NonNull
-  public final TextView btnBack;
+  public final MaterialButton btnCloseSettings;
 
   @NonNull
   public final MaterialButton btnColorAmber;
@@ -51,20 +51,31 @@ public final class ActivitySettingsBinding implements ViewBinding {
   public final MaterialButton btnSize72;
 
   @NonNull
+  public final MaterialButton btnThemeCyber;
+
+  @NonNull
+  public final MaterialButton btnThemeMatrix;
+
+  @NonNull
+  public final MaterialButton btnThemeSunset;
+
+  @NonNull
   public final TextView tvCurrentAccentColor;
 
   @NonNull
   public final TextView tvCurrentIconSize;
 
-  private ActivitySettingsBinding(@NonNull LinearLayout rootView, @NonNull TextView btnBack,
-      @NonNull MaterialButton btnColorAmber, @NonNull MaterialButton btnColorCyan,
-      @NonNull MaterialButton btnColorIce, @NonNull MaterialButton btnColorViolet,
-      @NonNull MaterialButton btnResetDefaults, @NonNull MaterialButton btnSize28,
-      @NonNull MaterialButton btnSize40, @NonNull MaterialButton btnSize56,
-      @NonNull MaterialButton btnSize72, @NonNull TextView tvCurrentAccentColor,
+  private ActivitySettingsBinding(@NonNull LinearLayout rootView,
+      @NonNull MaterialButton btnCloseSettings, @NonNull MaterialButton btnColorAmber,
+      @NonNull MaterialButton btnColorCyan, @NonNull MaterialButton btnColorIce,
+      @NonNull MaterialButton btnColorViolet, @NonNull MaterialButton btnResetDefaults,
+      @NonNull MaterialButton btnSize28, @NonNull MaterialButton btnSize40,
+      @NonNull MaterialButton btnSize56, @NonNull MaterialButton btnSize72,
+      @NonNull MaterialButton btnThemeCyber, @NonNull MaterialButton btnThemeMatrix,
+      @NonNull MaterialButton btnThemeSunset, @NonNull TextView tvCurrentAccentColor,
       @NonNull TextView tvCurrentIconSize) {
     this.rootView = rootView;
-    this.btnBack = btnBack;
+    this.btnCloseSettings = btnCloseSettings;
     this.btnColorAmber = btnColorAmber;
     this.btnColorCyan = btnColorCyan;
     this.btnColorIce = btnColorIce;
@@ -74,6 +85,9 @@ public final class ActivitySettingsBinding implements ViewBinding {
     this.btnSize40 = btnSize40;
     this.btnSize56 = btnSize56;
     this.btnSize72 = btnSize72;
+    this.btnThemeCyber = btnThemeCyber;
+    this.btnThemeMatrix = btnThemeMatrix;
+    this.btnThemeSunset = btnThemeSunset;
     this.tvCurrentAccentColor = tvCurrentAccentColor;
     this.tvCurrentIconSize = tvCurrentIconSize;
   }
@@ -105,9 +119,9 @@ public final class ActivitySettingsBinding implements ViewBinding {
     // This is done to optimize the compiled bytecode for size and performance.
     int id;
     missingId: {
-      id = R.id.btn_back;
-      TextView btnBack = ViewBindings.findChildViewById(rootView, id);
-      if (btnBack == null) {
+      id = R.id.btn_close_settings;
+      MaterialButton btnCloseSettings = ViewBindings.findChildViewById(rootView, id);
+      if (btnCloseSettings == null) {
         break missingId;
       }
 
@@ -165,6 +179,24 @@ public final class ActivitySettingsBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.btn_theme_cyber;
+      MaterialButton btnThemeCyber = ViewBindings.findChildViewById(rootView, id);
+      if (btnThemeCyber == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_theme_matrix;
+      MaterialButton btnThemeMatrix = ViewBindings.findChildViewById(rootView, id);
+      if (btnThemeMatrix == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_theme_sunset;
+      MaterialButton btnThemeSunset = ViewBindings.findChildViewById(rootView, id);
+      if (btnThemeSunset == null) {
+        break missingId;
+      }
+
       id = R.id.tv_current_accent_color;
       TextView tvCurrentAccentColor = ViewBindings.findChildViewById(rootView, id);
       if (tvCurrentAccentColor == null) {
@@ -177,9 +209,10 @@ public final class ActivitySettingsBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ActivitySettingsBinding((LinearLayout) rootView, btnBack, btnColorAmber,
+      return new ActivitySettingsBinding((LinearLayout) rootView, btnCloseSettings, btnColorAmber,
           btnColorCyan, btnColorIce, btnColorViolet, btnResetDefaults, btnSize28, btnSize40,
-          btnSize56, btnSize72, tvCurrentAccentColor, tvCurrentIconSize);
+          btnSize56, btnSize72, btnThemeCyber, btnThemeMatrix, btnThemeSunset, tvCurrentAccentColor,
+          tvCurrentIconSize);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

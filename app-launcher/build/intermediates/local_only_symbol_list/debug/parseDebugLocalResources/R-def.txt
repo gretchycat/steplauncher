@@ -15,7 +15,7 @@ drawable bg_glass_dock_rail_active
 drawable bg_glass_dock_tile
 drawable ic_dock_anchor_paperclip
 drawable ic_launcher
-id btn_back
+id btn_close_settings
 id btn_color_amber
 id btn_color_cyan
 id btn_color_ice
@@ -25,6 +25,9 @@ id btn_size_28
 id btn_size_40
 id btn_size_56
 id btn_size_72
+id btn_theme_cyber
+id btn_theme_matrix
+id btn_theme_sunset
 id dock_bottom_container
 id dock_bottom_left_container
 id dock_top_right_container

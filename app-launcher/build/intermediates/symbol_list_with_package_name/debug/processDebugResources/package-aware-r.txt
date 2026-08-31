@@ -3187,7 +3187,7 @@ id bounce
 id bounceBoth
 id bounceEnd
 id bounceStart
-id btn_back
+id btn_close_settings
 id btn_color_amber
 id btn_color_cyan
 id btn_color_ice
@@ -3197,6 +3197,9 @@ id btn_size_28
 id btn_size_40
 id btn_size_56
 id btn_size_72
+id btn_theme_cyber
+id btn_theme_matrix
+id btn_theme_sunset
 id buttonPanel
 id cache_measures
 id callMeasure

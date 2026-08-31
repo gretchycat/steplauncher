@@ -107,9 +107,19 @@ class DockTileAdapter(
             holder.tvIcon.text = tile.iconSymbol
         }
 
+        // Apply Text Accent Color
+        val textHex = DockManager.textColorHex
+        if (!textHex.isNullOrEmpty()) {
+            try {
+                val colorInt = Color.parseColor(textHex)
+                holder.tvTitle.setTextColor(colorInt)
+                holder.tvSubtitle.setTextColor(colorInt)
+            } catch (e: Exception) {}
+        }
+
         when (tile) {
             is DockTile.DockAnchor -> {
-                holder.tvSubtitle.text = ""
+                holder.tvSubtitle.text = "Anchor"
                 holder.tvBadge.visibility = View.VISIBLE
                 holder.tvBadge.text = "${DockManager.currentWorkspaceIndex + 1}"
                 holder.itemView.alpha = 1.0f
@@ -160,6 +170,13 @@ class DockTileAdapter(
                     holder.tvTitle.text = "${bat.levelPercent}%"
                     holder.tvSubtitle.text = if (bat.isCharging) "⚡ ${bat.chargePlugStr}" else "🔋 Discharging"
                     holder.tvIcon.text = if (bat.isCharging) "⚡" else if (bat.levelPercent <= 20) "🪫" else "🔋"
+
+                    val batColorHex = when {
+                        bat.levelPercent <= 20 -> DockManager.colorHighHex
+                        bat.levelPercent <= 40 -> DockManager.colorMedHex
+                        else -> DockManager.colorLowHex
+                    }
+                    try { holder.tvTitle.setTextColor(Color.parseColor(batColorHex)) } catch (e: Exception) {}
                 } else if (tile.moduleType.equals("WMMON", ignoreCase = true) || tile.moduleType.equals("TELEMETRY", ignoreCase = true)) {
                     val mode = DockManager.getWmMonMode(tile.id)
                     val density = holder.itemView.resources.displayMetrics.density
@@ -172,7 +189,8 @@ class DockTileAdapter(
                         0 -> { // CPU Line Graph
                             val cpu = com.steplauncher.core.vfs.SysMonUtils.getCpuMetrics()
                             val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawCpuLineGraph(
-                                graphPx, graphPx, com.steplauncher.core.vfs.SysMonUtils.cpuHistory
+                                graphPx, graphPx, com.steplauncher.core.vfs.SysMonUtils.cpuHistory,
+                                DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                             )
                             holder.ivAppIcon.setImageBitmap(bmp)
                             holder.tvTitle.text = "CPU: ${cpu.cpuPercent}%"
@@ -181,7 +199,8 @@ class DockTileAdapter(
                         1 -> { // Memory Bar Graph
                             val mem = com.steplauncher.core.vfs.SysMonUtils.getMemoryMetrics(holder.itemView.context)
                             val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawMemoryBarGraph(
-                                graphPx, graphPx, mem.ramUsagePercent
+                                graphPx, graphPx, mem.ramUsagePercent,
+                                DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                             )
                             holder.ivAppIcon.setImageBitmap(bmp)
                             holder.tvTitle.text = "RAM: ${mem.ramUsagePercent}%"
@@ -190,7 +209,8 @@ class DockTileAdapter(
                         2 -> { // Storage Gauge Arc Graph
                             val storage = com.steplauncher.core.vfs.SysMonUtils.getStorageMetrics(holder.itemView.context)
                             val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawStorageGaugeGraph(
-                                graphPx, graphPx, storage.storagePercentUsed
+                                graphPx, graphPx, storage.storagePercentUsed,
+                                DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                             )
                             holder.ivAppIcon.setImageBitmap(bmp)
                             holder.tvTitle.text = "Disk: ${storage.storagePercentUsed}%"
@@ -201,7 +221,8 @@ class DockTileAdapter(
                             val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawNetworkWaveGraph(
                                 graphPx, graphPx,
                                 com.steplauncher.core.vfs.SysMonUtils.rxHistory,
-                                com.steplauncher.core.vfs.SysMonUtils.txHistory
+                                com.steplauncher.core.vfs.SysMonUtils.txHistory,
+                                DockManager.graphicColorHex
                             )
                             holder.ivAppIcon.setImageBitmap(bmp)
                             holder.tvTitle.text = "↓${net.rxRateKbps}K ↑${net.txRateKbps}K"
