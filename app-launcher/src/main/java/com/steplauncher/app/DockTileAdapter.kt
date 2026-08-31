@@ -160,6 +160,28 @@ class DockTileAdapter(
                     holder.tvTitle.text = "${bat.levelPercent}%"
                     holder.tvSubtitle.text = if (bat.isCharging) "⚡ ${bat.chargePlugStr}" else "🔋 Discharging"
                     holder.tvIcon.text = if (bat.isCharging) "⚡" else if (bat.levelPercent <= 20) "🪫" else "🔋"
+                } else if (tile.moduleType.equals("WMMON", ignoreCase = true) || tile.moduleType.equals("TELEMETRY", ignoreCase = true)) {
+                    val mode = DockManager.getWmMonMode(tile.id)
+                    when (mode) {
+                        0 -> { // CPU Mode
+                            val cpu = com.steplauncher.core.vfs.SysMonUtils.getCpuMetrics()
+                            holder.tvTitle.text = "CPU: ${cpu.cpuPercent}%"
+                            holder.tvSubtitle.text = "${cpu.numCores} Cores ${cpu.sparkline}"
+                            holder.tvIcon.text = "💻"
+                        }
+                        1 -> { // Memory & Storage Mode
+                            val mem = com.steplauncher.core.vfs.SysMonUtils.getMemoryStorageMetrics(holder.itemView.context)
+                            holder.tvTitle.text = "RAM: ${mem.ramUsagePercent}%"
+                            holder.tvSubtitle.text = "💾 ${String.format(Locale.US, "%.1f", mem.internalFreeGb)}GB Free"
+                            holder.tvIcon.text = "📊"
+                        }
+                        2 -> { // Network Mode
+                            val net = com.steplauncher.core.vfs.SysMonUtils.getNetworkMetrics(holder.itemView.context)
+                            holder.tvTitle.text = "↓${net.rxRateKbps}K ↑${net.txRateKbps}K"
+                            holder.tvSubtitle.text = "🌐 ${net.ipAddress}"
+                            holder.tvIcon.text = "🌐"
+                        }
+                    }
                 } else {
                     holder.tvSubtitle.text = tile.moduleType
                 }

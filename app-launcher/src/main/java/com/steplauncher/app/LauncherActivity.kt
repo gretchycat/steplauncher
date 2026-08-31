@@ -32,6 +32,7 @@ import com.steplauncher.core.renderer.DockManager
 import com.steplauncher.core.renderer.DockPosition
 import com.steplauncher.core.renderer.DockTile
 import com.steplauncher.core.vfs.BatteryUtils
+import com.steplauncher.core.vfs.SysMonUtils
 import com.steplauncher.core.vfs.VfsCategory
 import com.steplauncher.widget.WorkspaceWidgetHostManager
 import com.steplauncher.widget.WorkspaceWidgetInfo
@@ -101,7 +102,7 @@ class LauncherActivity : AppCompatActivity() {
     private val clockTickerRunnable = object : Runnable {
         override fun run() {
             refreshDocks()
-            clockTickerHandler.postDelayed(this, 10000)
+            clockTickerHandler.postDelayed(this, 3000)
         }
     }
 
@@ -376,6 +377,14 @@ class LauncherActivity : AppCompatActivity() {
                     DockManager.launchAndAddToRunningStack(clockApp.label, "⏰", clockApp.packageName, clockApp.launchIntent)
                 } else if (tile.moduleType.equals("WMBATTERY", ignoreCase = true)) {
                     showExtendedBatteryDialog()
+                } else if (tile.moduleType.equals("WMMON", ignoreCase = true) || tile.moduleType.equals("TELEMETRY", ignoreCase = true)) {
+                    val nextMode = DockManager.cycleWmMonMode(tile.id, this)
+                    val modeLabel = when (nextMode) {
+                        0 -> "💻 CPU Monitor Mode"
+                        1 -> "📊 Storage & Memory Mode"
+                        else -> "🌐 Wireless & Network Mode"
+                    }
+                    Toast.makeText(this, "Switched to $modeLabel", Toast.LENGTH_SHORT).show()
                 } else {
                     Toast.makeText(this, "Dockapp: ${tile.title} [${tile.moduleType}]", Toast.LENGTH_SHORT).show()
                 }
@@ -417,20 +426,114 @@ class LauncherActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun showWmMonDetailedDialog(tileId: String) {
+        val currentMode = DockManager.getWmMonMode(tileId)
+        when (currentMode) {
+            0 -> { // CPU Mode
+                val cpu = SysMonUtils.getCpuMetrics()
+                val sb = StringBuilder()
+                sb.append("💻 Active CPU Load: ${cpu.cpuPercent}%\n")
+                sb.append("⚡ Hardware Cores: ${cpu.numCores} Cores\n")
+                sb.append("⚙️ Architecture: ${cpu.architecture}\n")
+                sb.append("📈 Sparkline Load: ${cpu.sparkline}\n")
+
+                MaterialAlertDialogBuilder(this)
+                    .setTitle("💻 CPU Hardware Status")
+                    .setMessage(sb.toString().trimEnd())
+                    .setPositiveButton("OK", null)
+                    .setNeutralButton("⚙️ CPU Settings") { _, _ -> openSystemCpuSettings() }
+                    .show()
+            }
+            1 -> { // Memory & Storage Mode
+                val mem = SysMonUtils.getMemoryStorageMetrics(this)
+                val sb = StringBuilder()
+                sb.append("📊 RAM Usage: ${mem.usedRamMb}MB / ${mem.totalRamMb}MB (${mem.ramUsagePercent}% Used)\n\n")
+                sb.append("💾 Available Storage Locations:\n")
+                mem.storageLocations.forEach { (locName, sizes) ->
+                    val (freeGb, totalGb) = sizes
+                    sb.append("  • $locName: ${String.format("%.1f", freeGb)}GB Free / ${String.format("%.1f", totalGb)}GB Total\n")
+                }
+
+                MaterialAlertDialogBuilder(this)
+                    .setTitle("💾 Storage & Memory Status")
+                    .setMessage(sb.toString().trimEnd())
+                    .setPositiveButton("OK", null)
+                    .setNeutralButton("⚙️ Storage Settings") { _, _ -> openSystemStorageSettings() }
+                    .show()
+            }
+            2 -> { // Network Mode
+                val net = SysMonUtils.getNetworkMetrics(this)
+                val sb = StringBuilder()
+                sb.append("🌐 Primary IP Address: ${net.ipAddress}\n")
+                sb.append("↓ Rx Throughput: ${net.rxRateKbps} KB/s\n")
+                sb.append("↑ Tx Throughput: ${net.txRateKbps} KB/s\n\n")
+                sb.append("🔌 Active Network Interfaces:\n")
+                net.activeInterfaces.forEach { iface ->
+                    sb.append("  • $iface\n")
+                }
+
+                MaterialAlertDialogBuilder(this)
+                    .setTitle("🌐 Wireless & Network Status")
+                    .setMessage(sb.toString().trimEnd())
+                    .setPositiveButton("OK", null)
+                    .setNeutralButton("⚙️ Network Settings") { _, _ -> openSystemNetworkSettings() }
+                    .show()
+            }
+        }
+    }
+
     private fun openSystemBatterySettings() {
         try {
-            val intent = Intent(Intent.ACTION_POWER_USAGE_SUMMARY)
-            startActivity(intent)
+            startActivity(Intent(Intent.ACTION_POWER_USAGE_SUMMARY))
         } catch (e: Exception) {
             try {
-                val intent = Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)
-                startActivity(intent)
+                startActivity(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS))
             } catch (e2: Exception) {
                 try {
                     startActivity(Intent(Settings.ACTION_SETTINGS))
                 } catch (e3: Exception) {
                     Toast.makeText(this, "Unable to launch Battery Settings", Toast.LENGTH_SHORT).show()
                 }
+            }
+        }
+    }
+
+    private fun openSystemStorageSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS))
+        } catch (e: Exception) {
+            try {
+                startActivity(Intent(Settings.ACTION_SETTINGS))
+            } catch (e2: Exception) {
+                Toast.makeText(this, "Unable to launch Storage Settings", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun openSystemNetworkSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS))
+        } catch (e: Exception) {
+            try {
+                startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
+            } catch (e2: Exception) {
+                try {
+                    startActivity(Intent(Settings.ACTION_SETTINGS))
+                } catch (e3: Exception) {
+                    Toast.makeText(this, "Unable to launch Network Settings", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun openSystemCpuSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_APPLICATION_SETTINGS))
+        } catch (e: Exception) {
+            try {
+                startActivity(Intent(Settings.ACTION_SETTINGS))
+            } catch (e2: Exception) {
+                Toast.makeText(this, "Unable to launch System Settings", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -546,6 +649,15 @@ class LauncherActivity : AppCompatActivity() {
                 } else if (tile.moduleType.equals("WMBATTERY", ignoreCase = true)) {
                     actions.add("📊 Extended Battery Information")
                     actions.add("🔋 Open System Battery Settings")
+                } else if (tile.moduleType.equals("WMMON", ignoreCase = true) || tile.moduleType.equals("TELEMETRY", ignoreCase = true)) {
+                    val currentMode = DockManager.getWmMonMode(tile.id)
+                    actions.add("🔄 Cycle Telemetry Mode (CPU / RAM / Net)")
+                    actions.add("🔍 Detailed Resource Breakdown")
+                    when (currentMode) {
+                        0 -> actions.add("💻 Open System CPU Settings")
+                        1 -> actions.add("💾 Open System Storage Settings")
+                        2 -> actions.add("🌐 Open Wireless & Network Settings")
+                    }
                 } else {
                     actions.add("⚙️ Configure DockApp")
                 }
@@ -578,6 +690,15 @@ class LauncherActivity : AppCompatActivity() {
                     selected.contains("Configure Time & Date Format") -> showClockDockAppConfigDialog()
                     selected.contains("Extended Battery Information") -> showExtendedBatteryDialog()
                     selected.contains("Open System Battery Settings") -> openSystemBatterySettings()
+                    selected.contains("Cycle Telemetry Mode") -> {
+                        if (tile is DockTile.InternalDockApp) handleTileClick(tile, currentDock)
+                    }
+                    selected.contains("Detailed Resource Breakdown") -> {
+                        if (tile is DockTile.InternalDockApp) showWmMonDetailedDialog(tile.id)
+                    }
+                    selected.contains("Open System CPU Settings") -> openSystemCpuSettings()
+                    selected.contains("Open System Storage Settings") -> openSystemStorageSettings()
+                    selected.contains("Open Wireless & Network Settings") -> openSystemNetworkSettings()
                     selected.contains("Focus Running Process") -> handleTileClick(tile, currentDock)
                     selected.contains("Open VFS Category") -> handleTileClick(tile, currentDock)
                     selected.contains("Open External DockApp") -> handleTileClick(tile, currentDock)
@@ -770,7 +891,7 @@ class LauncherActivity : AppCompatActivity() {
     private fun showAddDockAppDialog(targetDock: DockPosition) {
         val options = arrayOf(
             "📱 App Launcher Shortcut",
-            "📊 System Telemetry DockApp",
+            "📊 System Hardware Monitor DockApp (WMMON)",
             "📁 VFS Category Link"
         )
 
@@ -820,15 +941,31 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     private fun showAddTelemetryDockAppDialog(targetDock: DockPosition) {
-        val newTile = DockTile.InternalDockApp(
-            id = "telemetry_" + System.currentTimeMillis(),
-            title = "Telemetry Mon",
-            iconSymbol = "📊",
-            moduleType = "TELEMETRY"
+        val dockApps = arrayOf(
+            "💻 CPU / Memory / Network Ticker (WMMON)",
+            "⏰ Date & Time DockApp (WMCLOCK)",
+            "🔋 Battery Monitor DockApp (WMBATTERY)"
         )
-        val targetList = DockManager.getTilesForPosition(targetDock)
-        targetList.add(newTile)
-        DockManager.notifyChanged(this)
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Select Hardware DockApp")
+            .setItems(dockApps) { _, which ->
+                val (title, moduleType, icon) = when (which) {
+                    0 -> Triple("System Monitor", "WMMON", "💻")
+                    1 -> Triple("Date & Time", "WMCLOCK", "⏰")
+                    else -> Triple("Battery Mon", "WMBATTERY", "🔋")
+                }
+                val newTile = DockTile.InternalDockApp(
+                    id = "dockapp_" + System.currentTimeMillis(),
+                    title = title,
+                    iconSymbol = icon,
+                    moduleType = moduleType
+                )
+                val targetList = DockManager.getTilesForPosition(targetDock)
+                targetList.add(newTile)
+                DockManager.notifyChanged(this)
+            }
+            .show()
     }
 
     private fun showAddVfsCategoryDialog(targetDock: DockPosition) {

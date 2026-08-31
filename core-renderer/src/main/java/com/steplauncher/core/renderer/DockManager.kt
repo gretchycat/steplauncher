@@ -290,30 +290,22 @@ object DockManager {
         )
     }
 
+    private val wmMonDisplayModes = mutableMapOf<String, Int>()
+
+    fun getWmMonMode(tileId: String): Int {
+        return wmMonDisplayModes[tileId] ?: 0
+    }
+
+    fun cycleWmMonMode(tileId: String, context: Context? = null): Int {
+        val current = getWmMonMode(tileId)
+        val next = (current + 1) % 3
+        wmMonDisplayModes[tileId] = next
+        notifyChanged(context)
+        return next
+    }
+
     private fun initRunningStackDefaults() {
         bottomLeftDockTiles.clear()
-        bottomLeftDockTiles.add(
-            DockTile.RunningTask(
-                id = "running_sys_telemetry",
-                title = "System Telemetry",
-                iconSymbol = "⚡",
-                packageName = "system.telemetry",
-                processId = 1042,
-                cpuUsagePercent = 12,
-                launchIntent = null
-            )
-        )
-        bottomLeftDockTiles.add(
-            DockTile.RunningTask(
-                id = "running_vfs_organizer",
-                title = "VFS Organizer",
-                iconSymbol = "📁",
-                packageName = "system.vfs",
-                processId = 1088,
-                cpuUsagePercent = 4,
-                launchIntent = null
-            )
-        )
     }
 
     fun registerExternalDockApp(descriptor: DockAppDescriptor, context: Context? = null) {
