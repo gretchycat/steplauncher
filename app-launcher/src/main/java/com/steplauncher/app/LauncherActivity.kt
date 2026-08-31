@@ -4,6 +4,8 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -11,9 +13,12 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.Spinner
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -486,7 +491,12 @@ class LauncherActivity : AppCompatActivity() {
                 }
             }
             is DockTile.InternalDockApp -> {
-                actions.add("⚙️ Configure DockApp")
+                if (tile.moduleType.equals("WMCLOCK", ignoreCase = true)) {
+                    actions.add("🚀 Open Clock Application")
+                    actions.add("⚙️ Configure Time & Date Format")
+                } else {
+                    actions.add("⚙️ Configure DockApp")
+                }
                 if (!isLocked) {
                     actions.add("↔️ Move to Dock...")
                     actions.add("✏️ Edit Title & Icon")
@@ -514,6 +524,8 @@ class LauncherActivity : AppCompatActivity() {
                 val selected = actions[which]
                 when {
                     selected.contains("Launch Application") -> handleTileClick(tile, currentDock)
+                    selected.contains("Open Clock Application") -> handleTileClick(tile, currentDock)
+                    selected.contains("Configure Time & Date Format") -> showClockDockAppConfigDialog()
                     selected.contains("Focus Running Process") -> handleTileClick(tile, currentDock)
                     selected.contains("Open VFS Category") -> handleTileClick(tile, currentDock)
                     selected.contains("Open External DockApp") -> handleTileClick(tile, currentDock)
@@ -533,6 +545,70 @@ class LauncherActivity : AppCompatActivity() {
                     selected.contains("Uninstall Application") -> uninstallApplication(tile)
                 }
             }
+            .show()
+    }
+
+    private fun showClockDockAppConfigDialog() {
+        val timePresets = arrayOf(
+            "24-Hour (e.g. 22:50)",
+            "12-Hour AM/PM (e.g. 10:50 PM)",
+            "24-Hour with Seconds (e.g. 22:50:15)",
+            "12-Hour with Seconds (e.g. 10:50:15 PM)"
+        )
+        val timeFmtValues = arrayOf("HH:mm", "hh:mm a", "HH:mm:ss", "hh:mm:ss a")
+
+        val datePresets = arrayOf(
+            "Short Date (e.g. Mon, Aug 31)",
+            "US Numeric (e.g. 08/31/2026)",
+            "ISO Standard (e.g. 2026-08-31)",
+            "Full Date (e.g. Monday, August 31)"
+        )
+        val dateFmtValues = arrayOf("EEE, MMM d", "MM/dd/yyyy", "yyyy-MM-dd", "EEEE, MMMM d")
+
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 30, 50, 30)
+        }
+
+        val tvTimeHeader = TextView(this).apply {
+            text = "⏰ Time Format:"
+            textSize = 14f
+            setTypeface(null, Typeface.BOLD)
+            setPadding(0, 10, 0, 10)
+        }
+        val spinnerTime = Spinner(this)
+        val timeAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, timePresets)
+        spinnerTime.adapter = timeAdapter
+        val currentTimeIdx = timeFmtValues.indexOf(DockManager.clockTimeFormat).coerceAtLeast(0)
+        spinnerTime.setSelection(currentTimeIdx)
+
+        val tvDateHeader = TextView(this).apply {
+            text = "📅 Date Format:"
+            textSize = 14f
+            setTypeface(null, Typeface.BOLD)
+            setPadding(0, 30, 0, 10)
+        }
+        val spinnerDate = Spinner(this)
+        val dateAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, datePresets)
+        spinnerDate.adapter = dateAdapter
+        val currentDateIdx = dateFmtValues.indexOf(DockManager.clockDateFormat).coerceAtLeast(0)
+        spinnerDate.setSelection(currentDateIdx)
+
+        layout.addView(tvTimeHeader)
+        layout.addView(spinnerTime)
+        layout.addView(tvDateHeader)
+        layout.addView(spinnerDate)
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("⚙️ Clock DockApp Settings")
+            .setView(layout)
+            .setPositiveButton("Save") { _, _ ->
+                val selectedTimeFmt = timeFmtValues[spinnerTime.selectedItemPosition]
+                val selectedDateFmt = dateFmtValues[spinnerDate.selectedItemPosition]
+                DockManager.updateClockFormats(selectedTimeFmt, selectedDateFmt, this)
+                Toast.makeText(this, "Clock DockApp format updated!", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
             .show()
     }
 

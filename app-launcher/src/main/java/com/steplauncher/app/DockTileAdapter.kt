@@ -130,13 +130,31 @@ class DockTileAdapter(
                 holder.itemView.alpha = 0.95f
             }
             is DockTile.InternalDockApp -> {
-                if (tile.moduleType.uppercase() == "WMCLOCK") {
-                    val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
-                    val dateFmt = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
+                if (tile.moduleType.equals("WMCLOCK", ignoreCase = true)) {
+                    val timeFmtStr = DockManager.clockTimeFormat
+                    val dateFmtStr = DockManager.clockDateFormat
                     val now = Date()
-                    holder.tvTitle.text = timeFmt.format(now)
-                    holder.tvSubtitle.text = dateFmt.format(now)
-                    holder.tvIcon.text = "⏰"
+
+                    val formattedTime = try {
+                        SimpleDateFormat(timeFmtStr, Locale.getDefault()).format(now)
+                    } catch (e: Exception) {
+                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(now)
+                    }
+
+                    val formattedDate = try {
+                        SimpleDateFormat(dateFmtStr, Locale.getDefault()).format(now)
+                    } catch (e: Exception) {
+                        SimpleDateFormat("EEE, MMM d", Locale.getDefault()).format(now)
+                    }
+
+                    holder.ivAppIcon.visibility = View.GONE
+                    holder.tvIcon.visibility = View.GONE
+
+                    holder.tvTitle.text = formattedTime
+                    holder.tvTitle.textSize = iconSizeDp * 0.42f
+
+                    holder.tvSubtitle.text = formattedDate
+                    holder.tvSubtitle.textSize = iconSizeDp * 0.22f
                 } else {
                     holder.tvSubtitle.text = tile.moduleType
                 }

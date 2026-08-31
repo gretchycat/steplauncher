@@ -18,12 +18,16 @@ object DockManager {
     private const val KEY_NUM_WORKSPACES = "key_num_workspaces"
     private const val KEY_WORKSPACE_PREFIX = "key_workspace_tiles_"
     private const val KEY_ACCENT_COLOR = "key_accent_color"
+    private const val KEY_CLOCK_TIME_FMT = "key_clock_time_fmt"
+    private const val KEY_CLOCK_DATE_FMT = "key_clock_date_fmt"
 
     // Default icon size set to 56dp (twice as big as previous 28dp/30dp)
     var tileIconSizeDp: Int = 56
     var isLayoutLocked: Boolean = false
     var currentWorkspaceIndex: Int = 0
     var accentColorHex: String = "#FFFFFF" // Default Frosted White
+    var clockTimeFormat: String = "HH:mm"
+    var clockDateFormat: String = "EEE, MMM d"
 
     private val listeners = mutableListOf<() -> Unit>()
 
@@ -140,6 +144,12 @@ object DockManager {
         }
     }
 
+    fun updateClockFormats(timeFmt: String, dateFmt: String, context: Context) {
+        clockTimeFormat = timeFmt
+        clockDateFormat = dateFmt
+        notifyChanged(context)
+    }
+
     /**
      * Synchronously resets all dock tiles to factory defaults, clears SharedPreferences,
      * removes all extra added items, and repopulates initial default handlers.
@@ -156,6 +166,8 @@ object DockManager {
         isLayoutLocked = false
         currentWorkspaceIndex = 0
         accentColorHex = "#FFFFFF"
+        clockTimeFormat = "HH:mm"
+        clockDateFormat = "EEE, MMM d"
         isInitialized = true
 
         populateDefaultTiles(context)
@@ -445,6 +457,8 @@ object DockManager {
             editor.putInt(KEY_WORKSPACE_INDEX, currentWorkspaceIndex)
             editor.putInt(KEY_NUM_WORKSPACES, workspaceDocks.size)
             editor.putString(KEY_ACCENT_COLOR, accentColorHex)
+            editor.putString(KEY_CLOCK_TIME_FMT, clockTimeFormat)
+            editor.putString(KEY_CLOCK_DATE_FMT, clockDateFormat)
 
             for (w in 0 until workspaceDocks.size) {
                 val jsonWs = JSONArray()
@@ -493,7 +507,8 @@ object DockManager {
 
     private fun restoreState(context: Context, prefs: android.content.SharedPreferences) {
         val pm = context.packageManager
-        accentColorHex = prefs.getString(KEY_ACCENT_COLOR, "#FFFFFF") ?: "#FFFFFF"
+        clockTimeFormat = prefs.getString(KEY_CLOCK_TIME_FMT, "HH:mm") ?: "HH:mm"
+        clockDateFormat = prefs.getString(KEY_CLOCK_DATE_FMT, "EEE, MMM d") ?: "EEE, MMM d"
         val numWorkspaces = prefs.getInt(KEY_NUM_WORKSPACES, 3).coerceAtLeast(1)
 
         fun parseList(jsonStr: String, targetList: MutableList<DockTile>) {
