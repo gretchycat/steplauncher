@@ -452,100 +452,97 @@ class LauncherActivity : AppCompatActivity() {
             setPadding(0, 20, 0, 10)
         }
 
-        when (currentMode) {
-            0 -> { // CPU Mode
-                val cpu = SysMonUtils.getCpuMetrics()
-                val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
-                    graphW, graphH, SysMonUtils.cpuHistory, "CPU Load History (10 Min)", "%",
-                    DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
-                )
-                ivGraph.setImageBitmap(bmp)
-                tvInfo.text = "💻 CPU Load: ${cpu.cpuPercent}%\n⚡ Cores: ${cpu.numCores} Active (${cpu.architecture})\n📈 Telemetry: ${SysMonUtils.cpuHistory.size} / 600 Samples"
+        layout.addView(ivGraph)
+        layout.addView(tvInfo)
 
-                layout.addView(ivGraph)
-                layout.addView(tvInfo)
+        val liveHandler = android.os.Handler(android.os.Looper.getMainLooper())
+        val updateRunnable = object : Runnable {
+            override fun run() {
+                when (currentMode) {
+                    0 -> { // CPU Mode
+                        val cpu = SysMonUtils.getCpuMetrics()
+                        val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
+                            graphW, graphH, SysMonUtils.cpuHistory, "CPU Load History (10 Min)", "%",
+                            DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
+                        )
+                        ivGraph.setImageBitmap(bmp)
+                        tvInfo.text = "💻 CPU Load: ${cpu.cpuPercent}%\n⚡ Cores: ${cpu.numCores} Active (${cpu.architecture})\n📈 Telemetry: ${SysMonUtils.cpuHistory.size} / 600 Samples"
+                    }
+                    1 -> { // Memory Mode
+                        val mem = SysMonUtils.getMemoryMetrics(this@LauncherActivity)
+                        val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
+                            graphW, graphH, SysMonUtils.memoryHistory, "RAM Usage History (10 Min)", "%",
+                            DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
+                        )
+                        ivGraph.setImageBitmap(bmp)
+                        tvInfo.text = "📊 RAM Utilization: ${mem.ramUsagePercent}%\n💾 Allocated: ${mem.usedRamMb} MB / ${mem.totalRamMb} MB\n📈 Telemetry: ${SysMonUtils.memoryHistory.size} / 600 Samples"
+                    }
+                    2 -> { // Storage Mode
+                        val storage = SysMonUtils.getStorageMetrics(this@LauncherActivity)
+                        val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
+                            graphW, graphH, SysMonUtils.storageHistory, "Disk Capacity History (10 Min)", "%",
+                            DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
+                        )
+                        ivGraph.setImageBitmap(bmp)
 
-                MaterialAlertDialogBuilder(this)
-                    .setTitle("💻 CPU Hardware Status")
-                    .setView(layout)
-                    .setPositiveButton("OK", null)
-                    .setNeutralButton("⚙️ CPU Settings") { _, _ -> openSystemCpuSettings() }
-                    .show()
-            }
-            1 -> { // Memory Mode
-                val mem = SysMonUtils.getMemoryMetrics(this)
-                val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
-                    graphW, graphH, SysMonUtils.memoryHistory, "RAM Usage History (10 Min)", "%",
-                    DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
-                )
-                ivGraph.setImageBitmap(bmp)
-                tvInfo.text = "📊 RAM Utilization: ${mem.ramUsagePercent}%\n💾 Allocated: ${mem.usedRamMb} MB / ${mem.totalRamMb} MB\n📈 Telemetry: ${SysMonUtils.memoryHistory.size} / 600 Samples"
+                        val sb = StringBuilder()
+                        sb.append("💾 Disk Used: ${storage.storagePercentUsed}%\n")
+                        sb.append("📁 Available Storage Locations:\n")
+                        storage.storageLocations.forEach { (locName, sizes) ->
+                            val (freeGb, totalGb) = sizes
+                            sb.append("  • $locName: ${String.format("%.1f", freeGb)} GB Free / ${String.format("%.1f", totalGb)} GB Total\n")
+                        }
+                        tvInfo.text = sb.toString().trimEnd()
+                    }
+                    3 -> { // Network Mode
+                        val net = SysMonUtils.getNetworkMetrics(this@LauncherActivity)
+                        val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
+                            graphW, graphH, SysMonUtils.rxHistory, "Network Downstream (10 Min)", "KB/s",
+                            DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
+                        )
+                        ivGraph.setImageBitmap(bmp)
 
-                layout.addView(ivGraph)
-                layout.addView(tvInfo)
-
-                MaterialAlertDialogBuilder(this)
-                    .setTitle("📊 System Memory (RAM) Status")
-                    .setView(layout)
-                    .setPositiveButton("OK", null)
-                    .setNeutralButton("⚙️ Memory Settings") { _, _ -> openSystemCpuSettings() }
-                    .show()
-            }
-            2 -> { // Storage Mode
-                val storage = SysMonUtils.getStorageMetrics(this)
-                val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
-                    graphW, graphH, SysMonUtils.storageHistory, "Disk Capacity History (10 Min)", "%",
-                    DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
-                )
-                ivGraph.setImageBitmap(bmp)
-
-                val sb = StringBuilder()
-                sb.append("💾 Disk Used: ${storage.storagePercentUsed}%\n")
-                sb.append("📁 Available Storage Locations:\n")
-                storage.storageLocations.forEach { (locName, sizes) ->
-                    val (freeGb, totalGb) = sizes
-                    sb.append("  • $locName: ${String.format("%.1f", freeGb)} GB Free / ${String.format("%.1f", totalGb)} GB Total\n")
+                        val sb = StringBuilder()
+                        sb.append("🌐 Primary IP: ${net.ipAddress}\n")
+                        sb.append("↓ Rx Throughput: ${net.rxRateKbps} KB/s  |  ↑ Tx Throughput: ${net.txRateKbps} KB/s\n")
+                        sb.append("🔌 Active Interfaces:\n")
+                        net.activeInterfaces.forEach { iface ->
+                            sb.append("  • $iface\n")
+                        }
+                        tvInfo.text = sb.toString().trimEnd()
+                    }
                 }
-                tvInfo.text = sb.toString().trimEnd()
-
-                layout.addView(ivGraph)
-                layout.addView(tvInfo)
-
-                MaterialAlertDialogBuilder(this)
-                    .setTitle("💾 System Storage Locations")
-                    .setView(layout)
-                    .setPositiveButton("OK", null)
-                    .setNeutralButton("⚙️ Storage Settings") { _, _ -> openSystemStorageSettings() }
-                    .show()
-            }
-            3 -> { // Network Mode
-                val net = SysMonUtils.getNetworkMetrics(this)
-                val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
-                    graphW, graphH, SysMonUtils.rxHistory, "Network Downstream (10 Min)", "KB/s",
-                    DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
-                )
-                ivGraph.setImageBitmap(bmp)
-
-                val sb = StringBuilder()
-                sb.append("🌐 Primary IP: ${net.ipAddress}\n")
-                sb.append("↓ Rx Throughput: ${net.rxRateKbps} KB/s  |  ↑ Tx Throughput: ${net.txRateKbps} KB/s\n")
-                sb.append("🔌 Active Interfaces:\n")
-                net.activeInterfaces.forEach { iface ->
-                    sb.append("  • $iface\n")
-                }
-                tvInfo.text = sb.toString().trimEnd()
-
-                layout.addView(ivGraph)
-                layout.addView(tvInfo)
-
-                MaterialAlertDialogBuilder(this)
-                    .setTitle("🌐 Wireless & Network Status")
-                    .setView(layout)
-                    .setPositiveButton("OK", null)
-                    .setNeutralButton("⚙️ Network Settings") { _, _ -> openSystemNetworkSettings() }
-                    .show()
+                liveHandler.postDelayed(this, 1000)
             }
         }
+
+        // Trigger immediate first frame update
+        updateRunnable.run()
+
+        val titleStr = when (currentMode) {
+            0 -> "💻 CPU Hardware Status (Live)"
+            1 -> "📊 System Memory (RAM) Status (Live)"
+            2 -> "💾 System Storage Locations (Live)"
+            else -> "🌐 Wireless & Network Status (Live)"
+        }
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(titleStr)
+            .setView(layout)
+            .setPositiveButton("OK", null)
+            .setNeutralButton("⚙️ System Settings") { _, _ ->
+                when (currentMode) {
+                    0, 1 -> openSystemCpuSettings()
+                    2 -> openSystemStorageSettings()
+                    else -> openSystemNetworkSettings()
+                }
+            }
+            .setOnDismissListener {
+                liveHandler.removeCallbacks(updateRunnable)
+            }
+            .create()
+
+        dialog.show()
     }
 
     private fun openSystemBatterySettings() {
