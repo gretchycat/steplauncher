@@ -1,7 +1,11 @@
 package com.steplauncher.app
 
 import android.graphics.Color
+import android.graphics.ImageDecoder
 import android.graphics.drawable.Drawable
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,7 +18,7 @@ import com.steplauncher.core.vfs.VfsNode
 
 /**
  * RecyclerView Adapter for displaying VFS Program Manager items in a scrollable grid with real application icons.
- * Supports multi-selection for batch operations (move, copy, delete) with in-place position updates.
+ * Supports multi-selection for batch operations (move, copy, delete) with in-place position updates and custom image URIs.
  */
 class VfsGridAdapter(
     private val items: List<VfsNode>,
@@ -44,23 +48,46 @@ class VfsGridAdapter(
 
         holder.tvTitle.text = item.name
 
-        var appDrawable: Drawable? = null
-        if (!item.isDirectory && !item.targetPackage.isNullOrEmpty()) {
+        val customIconUri = item.iconSymbol
+        var isCustomImage = false
+
+        if (customIconUri.startsWith("content://") || customIconUri.startsWith("file://") || customIconUri.startsWith("/")) {
             try {
-                appDrawable = pm.getApplicationIcon(item.targetPackage!!)
+                val uri = Uri.parse(customIconUri)
+                val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
+                } else {
+                    @Suppress("DEPRECATION")
+                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+                }
+                holder.ivIcon.setImageBitmap(bitmap)
+                holder.ivIcon.visibility = View.VISIBLE
+                holder.tvSymbol.visibility = View.GONE
+                isCustomImage = true
             } catch (e: Exception) {
-                appDrawable = null
+                isCustomImage = false
             }
         }
 
-        if (appDrawable != null) {
-            holder.ivIcon.setImageDrawable(appDrawable)
-            holder.ivIcon.visibility = View.VISIBLE
-            holder.tvSymbol.visibility = View.GONE
-        } else {
-            holder.ivIcon.visibility = View.GONE
-            holder.tvSymbol.visibility = View.VISIBLE
-            holder.tvSymbol.text = item.iconSymbol
+        if (!isCustomImage) {
+            var appDrawable: Drawable? = null
+            if (!item.isDirectory && !item.targetPackage.isNullOrEmpty() && (item.iconSymbol == "📱" || item.iconSymbol.isEmpty())) {
+                try {
+                    appDrawable = pm.getApplicationIcon(item.targetPackage!!)
+                } catch (e: Exception) {
+                    appDrawable = null
+                }
+            }
+
+            if (appDrawable != null) {
+                holder.ivIcon.setImageDrawable(appDrawable)
+                holder.ivIcon.visibility = View.VISIBLE
+                holder.tvSymbol.visibility = View.GONE
+            } else {
+                holder.ivIcon.visibility = View.GONE
+                holder.tvSymbol.visibility = View.VISIBLE
+                holder.tvSymbol.text = item.iconSymbol
+            }
         }
 
         // Multi-Select Checkbox State

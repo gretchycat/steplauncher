@@ -17,7 +17,9 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.GridLayout
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -1016,6 +1018,103 @@ class LauncherActivity : AppCompatActivity() {
             .show()
     }
 
+    private var pendingIconSelectedCallback: ((String) -> Unit)? = null
+
+    private val customIconPickerLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) {}
+            pendingIconSelectedCallback?.invoke(uri.toString())
+        }
+    }
+
+    private fun showIconPickerDialog(currentIcon: String, onIconSelected: (String) -> Unit) {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 25, 40, 25)
+        }
+
+        val btnBrowseImage = Button(this).apply {
+            text = "🖼️ Browse Custom Image File..."
+            setOnClickListener {
+                pendingIconSelectedCallback = { pickedUriStr ->
+                    onIconSelected(pickedUriStr)
+                }
+                customIconPickerLauncher.launch("image/*")
+            }
+        }
+        layout.addView(btnBrowseImage)
+
+        val etCustom = EditText(this).apply {
+            hint = "Or type custom emoji / icon text..."
+            setText(if (!currentIcon.startsWith("content://") && !currentIcon.startsWith("file://") && !currentIcon.startsWith("/")) currentIcon else "")
+        }
+        layout.addView(etCustom)
+
+        val tvSub = TextView(this).apply {
+            text = "Default Category Icons & Emojis:"
+            textSize = 13f
+            setPadding(0, 15, 0, 10)
+        }
+        layout.addView(tvSub)
+
+        val defaultIcons = listOf(
+            "📞", "🌐", "📷", "💬", "🎬", "🎮", "💼", "⚡", "⚙️", "📦",
+            "📁", "📂", "🔒", "⭐", "🚀", "⏰", "🔋", "📊", "✉️", "🎵",
+            "🎨", "🛠️", "📱", "💻", "☁️", "🔑", "💡", "🏷️", "📌", "🎯"
+        )
+
+        val gridLayout = GridLayout(this).apply {
+            columnCount = 6
+            setPadding(0, 5, 0, 5)
+        }
+
+        var dialogRef: androidx.appcompat.app.AlertDialog? = null
+
+        defaultIcons.forEach { iconSymbol ->
+            val btnIcon = Button(this, null, android.R.attr.buttonStyleSmall).apply {
+                text = iconSymbol
+                textSize = 18f
+                setPadding(2, 2, 2, 2)
+                setOnClickListener {
+                    onIconSelected(iconSymbol)
+                    dialogRef?.dismiss()
+                }
+            }
+            val params = GridLayout.LayoutParams().apply {
+                width = (46 * resources.displayMetrics.density).toInt()
+                height = (46 * resources.displayMetrics.density).toInt()
+                setMargins(4, 4, 4, 4)
+            }
+            gridLayout.addView(btnIcon, params)
+        }
+
+        val scrollView = ScrollView(this).apply {
+            addView(gridLayout)
+        }
+        layout.addView(scrollView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (180 * resources.displayMetrics.density).toInt()))
+
+        dialogRef = MaterialAlertDialogBuilder(this)
+            .setTitle("🎨 Choose Category Icon")
+            .setView(layout)
+            .setPositiveButton("Use Custom Text") { _, _ ->
+                val txt = etCustom.text.toString().trim()
+                if (txt.isNotEmpty()) {
+                    onIconSelected(txt)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        dialogRef.show()
+    }
+
     private fun showEditTileDialog(tile: DockTile) {
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -1026,21 +1125,28 @@ class LauncherActivity : AppCompatActivity() {
             hint = "Tile Title"
             setText(tile.title)
         }
-        val etIcon = EditText(this).apply {
-            hint = "Emoji / Icon Symbol"
-            setText(tile.iconSymbol)
+
+        var selectedIconSymbol = tile.iconSymbol
+
+        val btnPickIcon = Button(this).apply {
+            text = "🎨 Icon: ${if (selectedIconSymbol.length > 15) "Custom Image 🖼️" else selectedIconSymbol}"
+            setOnClickListener {
+                showIconPickerDialog(selectedIconSymbol) { newIcon ->
+                    selectedIconSymbol = newIcon
+                    text = "🎨 Icon: ${if (selectedIconSymbol.length > 15) "Custom Image 🖼️" else selectedIconSymbol}"
+                }
+            }
         }
 
         layout.addView(etTitle)
-        layout.addView(etIcon)
+        layout.addView(btnPickIcon)
 
         MaterialAlertDialogBuilder(this)
             .setTitle("✏️ Edit Tile Details")
             .setView(layout)
             .setPositiveButton("Save") { _, _ ->
                 val newTitle = etTitle.text.toString().ifEmpty { tile.title }
-                val newIcon = etIcon.text.toString().ifEmpty { tile.iconSymbol }
-                DockManager.updateTile(tile.id, newTitle, newIcon, this)
+                DockManager.updateTile(tile.id, newTitle, selectedIconSymbol, this)
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -1422,13 +1528,20 @@ class LauncherActivity : AppCompatActivity() {
             setText(node.name)
         }
 
-        val etIcon = EditText(this).apply {
-            hint = "Emoji / Icon Symbol"
-            setText(node.iconSymbol)
+        var selectedIconSymbol = node.iconSymbol
+
+        val btnPickIcon = Button(this).apply {
+            text = "🎨 Icon: ${if (selectedIconSymbol.length > 15) "Custom Image 🖼️" else selectedIconSymbol}"
+            setOnClickListener {
+                showIconPickerDialog(selectedIconSymbol) { newIcon ->
+                    selectedIconSymbol = newIcon
+                    text = "🎨 Icon: ${if (selectedIconSymbol.length > 15) "Custom Image 🖼️" else selectedIconSymbol}"
+                }
+            }
         }
 
         layout.addView(etName)
-        layout.addView(etIcon)
+        layout.addView(btnPickIcon)
 
         val itemType = if (node.isDirectory) "Directory" else "App Shortcut"
 
@@ -1437,10 +1550,9 @@ class LauncherActivity : AppCompatActivity() {
             .setView(layout)
             .setPositiveButton("Save") { _, _ ->
                 val newName = etName.text.toString().trim()
-                val newIcon = etIcon.text.toString().trim()
                 if (newName.isNotEmpty()) {
                     val updatedPath = com.steplauncher.core.vfs.VfsProgramManager.editNode(
-                        node.path, newName, newIcon, this@LauncherActivity
+                        node.path, newName, selectedIconSymbol, this@LauncherActivity
                     )
                     Toast.makeText(this@LauncherActivity, "Updated details for $newName", Toast.LENGTH_SHORT).show()
                     val refreshPath = if (currentDirPath == node.path) updatedPath else currentDirPath
@@ -1697,20 +1809,42 @@ class LauncherActivity : AppCompatActivity() {
 
     private fun showCreateVfsFolderDialog(parentPath: String) {
         val parentFormatted = com.steplauncher.core.vfs.VfsProgramManager.formatVfsPath(parentPath)
-        val input = EditText(this).apply {
-            hint = "Folder Name (e.g. Utilities, Games, Retro)"
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             setPadding(40, 20, 40, 20)
         }
+
+        val etName = EditText(this).apply {
+            hint = "Folder Name (e.g. Utilities, Games, Retro)"
+        }
+
+        var selectedIconSymbol = "📁"
+
+        val btnPickIcon = Button(this).apply {
+            text = "🎨 Icon: $selectedIconSymbol"
+            setOnClickListener {
+                showIconPickerDialog(selectedIconSymbol) { newIcon ->
+                    selectedIconSymbol = newIcon
+                    text = "🎨 Icon: ${if (selectedIconSymbol.length > 15) "Custom Image 🖼️" else selectedIconSymbol}"
+                }
+            }
+        }
+
+        layout.addView(etName)
+        layout.addView(btnPickIcon)
 
         MaterialAlertDialogBuilder(this)
             .setTitle("📁 Create New Directory")
             .setMessage("Creating folder under $parentFormatted:")
-            .setView(input)
+            .setView(layout)
             .setPositiveButton("Create") { _, _ ->
-                val name = input.text.toString().trim()
+                val name = etName.text.toString().trim()
                 if (name.isNotEmpty()) {
                     val created = com.steplauncher.core.vfs.VfsProgramManager.createDirectory(parentPath, name, this)
                     if (created != null) {
+                        if (selectedIconSymbol != "📁") {
+                            com.steplauncher.core.vfs.VfsProgramManager.editNode(created.path, name, selectedIconSymbol, this)
+                        }
                         Toast.makeText(this, "📁 Folder created: $name", Toast.LENGTH_SHORT).show()
                         showVfsProgramExplorerDialog(parentPath)
                     } else {

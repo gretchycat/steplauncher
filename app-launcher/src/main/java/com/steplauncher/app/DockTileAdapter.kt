@@ -84,27 +84,50 @@ class DockTileAdapter(
             else -> null
         }
 
-        var appDrawable: Drawable? = null
-        if (pkgName != null && pkgName.contains(".")) {
+        val customIconUri = tile.iconSymbol
+        var isCustomImage = false
+
+        if (customIconUri.startsWith("content://") || customIconUri.startsWith("file://") || customIconUri.startsWith("/")) {
             try {
-                appDrawable = holder.itemView.context.packageManager.getApplicationIcon(pkgName)
+                val uri = android.net.Uri.parse(customIconUri)
+                val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    android.graphics.ImageDecoder.decodeBitmap(android.graphics.ImageDecoder.createSource(holder.itemView.context.contentResolver, uri))
+                } else {
+                    @Suppress("DEPRECATION")
+                    android.provider.MediaStore.Images.Media.getBitmap(holder.itemView.context.contentResolver, uri)
+                }
+                holder.ivAppIcon.setImageBitmap(bitmap)
+                holder.ivAppIcon.visibility = View.VISIBLE
+                holder.tvIcon.visibility = View.GONE
+                isCustomImage = true
             } catch (e: Exception) {
-                appDrawable = null
+                isCustomImage = false
             }
         }
 
-        if (appDrawable != null) {
-            holder.ivAppIcon.setImageDrawable(appDrawable)
-            holder.ivAppIcon.visibility = View.VISIBLE
-            holder.tvIcon.visibility = View.GONE
-        } else if (tile is DockTile.DockAnchor && (tile.iconSymbol == "📎" || tile.iconSymbol.equals("paperclip", ignoreCase = true) || tile.iconSymbol.isEmpty())) {
-            holder.ivAppIcon.setImageResource(R.drawable.ic_dock_anchor_paperclip)
-            holder.ivAppIcon.visibility = View.VISIBLE
-            holder.tvIcon.visibility = View.GONE
-        } else {
-            holder.ivAppIcon.visibility = View.GONE
-            holder.tvIcon.visibility = View.VISIBLE
-            holder.tvIcon.text = tile.iconSymbol
+        if (!isCustomImage) {
+            var appDrawable: Drawable? = null
+            if (pkgName != null && pkgName.contains(".")) {
+                try {
+                    appDrawable = holder.itemView.context.packageManager.getApplicationIcon(pkgName)
+                } catch (e: Exception) {
+                    appDrawable = null
+                }
+            }
+
+            if (appDrawable != null) {
+                holder.ivAppIcon.setImageDrawable(appDrawable)
+                holder.ivAppIcon.visibility = View.VISIBLE
+                holder.tvIcon.visibility = View.GONE
+            } else if (tile is DockTile.DockAnchor && (tile.iconSymbol == "📎" || tile.iconSymbol.equals("paperclip", ignoreCase = true) || tile.iconSymbol.isEmpty())) {
+                holder.ivAppIcon.setImageResource(R.drawable.ic_dock_anchor_paperclip)
+                holder.ivAppIcon.visibility = View.VISIBLE
+                holder.tvIcon.visibility = View.GONE
+            } else {
+                holder.ivAppIcon.visibility = View.GONE
+                holder.tvIcon.visibility = View.VISIBLE
+                holder.tvIcon.text = tile.iconSymbol
+            }
         }
 
         // Apply Text Accent Color
