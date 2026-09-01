@@ -435,7 +435,6 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     private fun showWmMonDetailedDialog(tileId: String) {
-        val currentMode = DockManager.getWmMonMode(tileId)
         val density = resources.displayMetrics.density
         val graphW = (320 * density).toInt()
         val graphH = (180 * density).toInt()
@@ -443,6 +442,14 @@ class LauncherActivity : AppCompatActivity() {
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(40, 20, 40, 20)
+        }
+
+        val tvSwipeHint = TextView(this).apply {
+            text = "👈 Swipe Left / Right to cycle modes 👉"
+            textSize = 12f
+            setTextColor(Color.parseColor("#B0FFFFFF"))
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 0, 0, 10)
         }
 
         val ivGraph = android.widget.ImageView(this).apply {
@@ -454,13 +461,28 @@ class LauncherActivity : AppCompatActivity() {
             setPadding(0, 20, 0, 10)
         }
 
+        layout.addView(tvSwipeHint)
         layout.addView(ivGraph)
         layout.addView(tvInfo)
+
+        var dialogRef: androidx.appcompat.app.AlertDialog? = null
+
+        fun getModeTitle(mode: Int): String {
+            return when (mode) {
+                0 -> "💻 CPU Hardware Status (Live)"
+                1 -> "📊 System Memory (RAM) Status (Live)"
+                2 -> "💾 System Storage Locations (Live)"
+                else -> "🌐 Wireless & Network Status (Live)"
+            }
+        }
 
         val liveHandler = android.os.Handler(android.os.Looper.getMainLooper())
         val updateRunnable = object : Runnable {
             override fun run() {
-                when (currentMode) {
+                val mode = DockManager.getWmMonMode(tileId)
+                dialogRef?.setTitle(getModeTitle(mode))
+
+                when (mode) {
                     0 -> { // CPU Mode
                         val cpu = SysMonUtils.getCpuMetrics()
                         val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
@@ -518,22 +540,62 @@ class LauncherActivity : AppCompatActivity() {
             }
         }
 
-        // Trigger immediate first frame update
-        updateRunnable.run()
+        // Gesture Detector for Left & Right Horizontal Swiping
+        val gestureDetector = androidx.core.view.GestureDetectorCompat(this, object : android.view.GestureDetector.SimpleOnGestureListener() {
+            private val SWIPE_THRESHOLD = 40
+            private val SWIPE_VELOCITY_THRESHOLD = 40
 
-        val titleStr = when (currentMode) {
-            0 -> "💻 CPU Hardware Status (Live)"
-            1 -> "📊 System Memory (RAM) Status (Live)"
-            2 -> "💾 System Storage Locations (Live)"
-            else -> "🌐 Wireless & Network Status (Live)"
+            override fun onFling(
+                e1: android.view.MotionEvent?,
+                e2: android.view.MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+                val diffX = e2.x - e1.x
+                val diffY = e2.y - e1.y
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                        val current = DockManager.getWmMonMode(tileId)
+                        if (diffX < 0) {
+                            // Swipe Left -> Next Mode
+                            val nextMode = (current + 1) % 4
+                            DockManager.setWmMonMode(tileId, nextMode, this@LauncherActivity)
+                        } else {
+                            // Swipe Right -> Prev Mode
+                            val prevMode = (current + 3) % 4
+                            DockManager.setWmMonMode(tileId, prevMode, this@LauncherActivity)
+                        }
+                        liveHandler.removeCallbacks(updateRunnable)
+                        updateRunnable.run()
+                        refreshLauncherUi()
+                        return true
+                    }
+                }
+                return false
+            }
+
+            override fun onDown(e: android.view.MotionEvent): Boolean {
+                return true
+            }
+        })
+
+        val touchListener = android.view.View.OnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            true
         }
 
+        layout.setOnTouchListener(touchListener)
+        ivGraph.setOnTouchListener(touchListener)
+
+        val initMode = DockManager.getWmMonMode(tileId)
+
         val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(titleStr)
+            .setTitle(getModeTitle(initMode))
             .setView(layout)
             .setPositiveButton("OK", null)
             .setNeutralButton("⚙️ System Settings") { _, _ ->
-                when (currentMode) {
+                when (DockManager.getWmMonMode(tileId)) {
                     0, 1 -> openSystemCpuSettings()
                     2 -> openSystemStorageSettings()
                     else -> openSystemNetworkSettings()
@@ -544,7 +606,11 @@ class LauncherActivity : AppCompatActivity() {
             }
             .create()
 
+        dialogRef = dialog
         dialog.show()
+
+        // Trigger immediate first frame update
+        updateRunnable.run()
     }
 
     private fun openSystemBatterySettings() {

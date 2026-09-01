@@ -414,6 +414,12 @@ object DockManager {
         return next
     }
 
+    fun setWmMonMode(tileId: String, mode: Int, context: Context? = null) {
+        val normalized = (mode % 4 + 4) % 4
+        wmMonDisplayModes[tileId] = normalized
+        notifyChanged(context)
+    }
+
     private fun initRunningStackDefaults() {
         bottomLeftDockTiles.clear()
     }
