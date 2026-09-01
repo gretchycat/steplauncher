@@ -1102,7 +1102,11 @@ class LauncherActivity : AppCompatActivity() {
         }
     }
 
+    private var vfsExplorerDialog: androidx.appcompat.app.AlertDialog? = null
+
     private fun showVfsProgramExplorerDialog(dirPath: String = "/VFS") {
+        vfsExplorerDialog?.dismiss()
+
         val currentNode = com.steplauncher.core.vfs.VfsProgramManager.findNodeByPath(
             com.steplauncher.core.vfs.VfsProgramManager.rootNode, dirPath
         ) ?: com.steplauncher.core.vfs.VfsProgramManager.rootNode
@@ -1203,7 +1207,7 @@ class LauncherActivity : AppCompatActivity() {
 
         layout.addView(recyclerView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (340 * resources.displayMetrics.density).toInt()))
 
-        MaterialAlertDialogBuilder(this)
+        vfsExplorerDialog = MaterialAlertDialogBuilder(this)
             .setTitle("💻 VFS Program Explorer")
             .setView(layout)
             .setPositiveButton("Close", null)
@@ -1377,7 +1381,7 @@ class LauncherActivity : AppCompatActivity() {
                     val created = com.steplauncher.core.vfs.VfsProgramManager.createDirectory(parentPath, name, this)
                     if (created != null) {
                         Toast.makeText(this, "📁 Folder created: $name", Toast.LENGTH_SHORT).show()
-                        showVfsProgramExplorerDialog(created.path)
+                        showVfsProgramExplorerDialog(parentPath)
                     } else {
                         Toast.makeText(this, "Failed to create directory", Toast.LENGTH_SHORT).show()
                     }
