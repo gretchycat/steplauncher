@@ -27,16 +27,21 @@ public final class ItemVfsGridBinding implements ViewBinding {
   public final TextView tvVfsBadge;
 
   @NonNull
+  public final TextView tvVfsCheck;
+
+  @NonNull
   public final TextView tvVfsSymbol;
 
   @NonNull
   public final TextView tvVfsTitle;
 
   private ItemVfsGridBinding(@NonNull FrameLayout rootView, @NonNull ImageView ivVfsIcon,
-      @NonNull TextView tvVfsBadge, @NonNull TextView tvVfsSymbol, @NonNull TextView tvVfsTitle) {
+      @NonNull TextView tvVfsBadge, @NonNull TextView tvVfsCheck, @NonNull TextView tvVfsSymbol,
+      @NonNull TextView tvVfsTitle) {
     this.rootView = rootView;
     this.ivVfsIcon = ivVfsIcon;
     this.tvVfsBadge = tvVfsBadge;
+    this.tvVfsCheck = tvVfsCheck;
     this.tvVfsSymbol = tvVfsSymbol;
     this.tvVfsTitle = tvVfsTitle;
   }
@@ -80,6 +85,12 @@ public final class ItemVfsGridBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.tv_vfs_check;
+      TextView tvVfsCheck = ViewBindings.findChildViewById(rootView, id);
+      if (tvVfsCheck == null) {
+        break missingId;
+      }
+
       id = R.id.tv_vfs_symbol;
       TextView tvVfsSymbol = ViewBindings.findChildViewById(rootView, id);
       if (tvVfsSymbol == null) {
@@ -92,8 +103,8 @@ public final class ItemVfsGridBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ItemVfsGridBinding((FrameLayout) rootView, ivVfsIcon, tvVfsBadge, tvVfsSymbol,
-          tvVfsTitle);
+      return new ItemVfsGridBinding((FrameLayout) rootView, ivVfsIcon, tvVfsBadge, tvVfsCheck,
+          tvVfsSymbol, tvVfsTitle);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

@@ -3594,6 +3594,7 @@ id tv_tile_subtitle
 id tv_tile_title
 id tv_tile_workspace_badge
 id tv_vfs_badge
+id tv_vfs_check
 id tv_vfs_symbol
 id tv_vfs_title
 id unchecked

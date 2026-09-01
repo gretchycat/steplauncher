@@ -8,6 +8,10 @@
         "source": "com.steplauncher.app.app-launcher-main-34:/layout/item_vfs_grid.xml"
     },
     {
+        "merged": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-mergeDebugResources-31:/layout/item_vfs_grid.xml",
+        "source": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-main-34:/layout/item_vfs_grid.xml"
+    },
+    {
         "merged": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-mergeDebugResources-31:/layout/activity_launcher.xml",
         "source": "/data/data/com.termux/files/home/.gradle/daemon/9.6.1/com.steplauncher.app.app-launcher-main-34:/layout/activity_launcher.xml"
     },

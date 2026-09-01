@@ -14,9 +14,12 @@ import com.steplauncher.core.vfs.VfsNode
 
 /**
  * RecyclerView Adapter for displaying VFS Program Manager items in a scrollable grid with real application icons.
+ * Supports multi-selection for batch operations (move, copy, delete).
  */
 class VfsGridAdapter(
     private val items: List<VfsNode>,
+    var isMultiSelectMode: Boolean = false,
+    var selectedPackages: Set<String> = emptySet(),
     private val onItemClick: (VfsNode) -> Unit,
     private val onItemLongClick: (VfsNode, View) -> Unit
 ) : RecyclerView.Adapter<VfsGridAdapter.VfsViewHolder>() {
@@ -26,6 +29,7 @@ class VfsGridAdapter(
         val tvSymbol: TextView = itemView.findViewById(R.id.tv_vfs_symbol)
         val tvTitle: TextView = itemView.findViewById(R.id.tv_vfs_title)
         val tvBadge: TextView = itemView.findViewById(R.id.tv_vfs_badge)
+        val tvCheck: TextView = itemView.findViewById(R.id.tv_vfs_check)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VfsViewHolder {
@@ -59,14 +63,29 @@ class VfsGridAdapter(
             holder.tvSymbol.text = item.iconSymbol
         }
 
+        // Multi-Select Checkbox State
+        val pkg = item.targetPackage
+        if (isMultiSelectMode && !item.isDirectory && !pkg.isNullOrEmpty()) {
+            holder.tvCheck.visibility = View.VISIBLE
+            holder.tvCheck.text = if (selectedPackages.contains(pkg)) "☑️" else "☐"
+        } else {
+            holder.tvCheck.visibility = View.GONE
+        }
+
         // Attention State & Badge Check
         val targetPkg = item.targetPackage
         val isAttention = if (!targetPkg.isNullOrEmpty()) DockManager.isTileAttentionRequested(targetPkg) else false
         val badgeText = if (!targetPkg.isNullOrEmpty()) DockManager.getTileBadgeText(targetPkg) else null
 
-        // Tile background tint swap if attention requested
-        val tintHex = if (isAttention) DockManager.attentionColorHex else DockManager.accentColorHex
-        if (!tintHex.isNullOrEmpty() && (tintHex != "#FFFFFF" || isAttention)) {
+        // Tile background tint swap if attention requested or selected
+        val isSelected = !pkg.isNullOrEmpty() && selectedPackages.contains(pkg)
+        val tintHex = when {
+            isSelected -> "#00E5FF" // Highlight cyan when selected
+            isAttention -> DockManager.attentionColorHex
+            else -> DockManager.accentColorHex
+        }
+
+        if (!tintHex.isNullOrEmpty() && (tintHex != "#FFFFFF" || isAttention || isSelected)) {
             try {
                 val colorInt = Color.parseColor(tintHex)
                 holder.itemView.background?.mutate()?.setTint(colorInt)
