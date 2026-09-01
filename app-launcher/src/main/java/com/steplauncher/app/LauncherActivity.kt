@@ -262,10 +262,15 @@ class LauncherActivity : AppCompatActivity() {
             • Horizontal Swipe: Switch Workspaces (Left/Right)
             • Desktop Long Press: Add Widgets / Add-Remove Workspaces
             • Tile 500ms Long Press: Tile Context Actions
+
+            🎨 Universal Icon Standard & Attributions:
+            • Category Icons: Google Material Symbols & Icons (Apache 2.0)
+            • Android Native System Vector Drawables
+            • Google Material Components & AndroidX Jetpack
         """.trimIndent()
 
         MaterialAlertDialogBuilder(this)
-            .setTitle("ℹ️ About StepLauncher")
+            .setTitle("ℹ️ About & Attributions")
             .setMessage(message)
             .setPositiveButton("OK", null)
             .show()
