@@ -17,7 +17,7 @@ import com.steplauncher.core.renderer.ForgivingTouchHelper
 import com.steplauncher.core.vfs.VfsNode
 
 /**
- * RecyclerView Adapter for displaying VFS Program Manager items in a scrollable grid with real application icons.
+ * RecyclerView Adapter for displaying VFS Program Manager items in a scrollable grid with native vector drawables and real application icons.
  * Supports multi-selection for batch operations (move, copy, delete) with in-place position updates and custom image URIs.
  */
 class VfsGridAdapter(
@@ -70,23 +70,31 @@ class VfsGridAdapter(
         }
 
         if (!isCustomImage) {
-            var appDrawable: Drawable? = null
-            if (!item.isDirectory && !item.targetPackage.isNullOrEmpty() && (item.iconSymbol == "📱" || item.iconSymbol.isEmpty())) {
-                try {
-                    appDrawable = pm.getApplicationIcon(item.targetPackage!!)
-                } catch (e: Exception) {
-                    appDrawable = null
-                }
-            }
-
-            if (appDrawable != null) {
-                holder.ivIcon.setImageDrawable(appDrawable)
+            val resId = context.resources.getIdentifier(customIconUri, "drawable", context.packageName)
+            if (resId != 0) {
+                holder.ivIcon.setImageResource(resId)
                 holder.ivIcon.visibility = View.VISIBLE
                 holder.tvSymbol.visibility = View.GONE
             } else {
-                holder.ivIcon.visibility = View.GONE
-                holder.tvSymbol.visibility = View.VISIBLE
-                holder.tvSymbol.text = item.iconSymbol
+                var appDrawable: Drawable? = null
+                if (!item.isDirectory && !item.targetPackage.isNullOrEmpty()) {
+                    try {
+                        appDrawable = pm.getApplicationIcon(item.targetPackage!!)
+                    } catch (e: Exception) {
+                        appDrawable = null
+                    }
+                }
+
+                if (appDrawable != null) {
+                    holder.ivIcon.setImageDrawable(appDrawable)
+                    holder.ivIcon.visibility = View.VISIBLE
+                    holder.tvSymbol.visibility = View.GONE
+                } else {
+                    val fallbackRes = if (item.isDirectory) R.drawable.ic_cat_folder else R.drawable.ic_cat_app
+                    holder.ivIcon.setImageResource(fallbackRes)
+                    holder.ivIcon.visibility = View.VISIBLE
+                    holder.tvSymbol.visibility = View.GONE
+                }
             }
         }
 

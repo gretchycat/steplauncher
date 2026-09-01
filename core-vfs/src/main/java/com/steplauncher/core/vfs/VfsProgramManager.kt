@@ -23,7 +23,7 @@ object VfsProgramManager {
             name = "VFS",
             path = "/VFS",
             isDirectory = true,
-            iconSymbol = "💻"
+            iconSymbol = "ic_cat_system"
         )
         // Add standard category directories by default
         VfsCategory.values().forEach { category ->
@@ -156,7 +156,7 @@ object VfsProgramManager {
             name = dirName,
             path = newPath,
             isDirectory = true,
-            iconSymbol = "📁"
+            iconSymbol = "ic_cat_folder"
         )
         parent.children.add(newDir)
         saveState(context)
@@ -166,7 +166,7 @@ object VfsProgramManager {
     /**
      * Adds an application shortcut to a specific directory path.
      */
-    fun addAppToDirectory(targetDirPath: String, packageName: String, label: String, iconSymbol: String = "📱", context: Context): Boolean {
+    fun addAppToDirectory(targetDirPath: String, packageName: String, label: String, iconSymbol: String = "ic_cat_app", context: Context): Boolean {
         val targetDir = findNodeByPath(rootNode, targetDirPath) ?: return false
         if (!targetDir.isDirectory) return false
 
@@ -368,12 +368,30 @@ object VfsProgramManager {
         val name = json.optString("name", "Folder")
         val path = json.optString("path", "/VFS/$name")
         val isDirectory = json.optBoolean("isDirectory", true)
-        val iconSymbol = json.optString("iconSymbol", if (isDirectory) "📁" else "📱")
+        val rawIconSymbol = json.optString("iconSymbol", if (isDirectory) "ic_cat_folder" else "ic_cat_app")
         val targetPackage = if (json.has("targetPackage")) json.getString("targetPackage") else null
         val categoryStr = if (json.has("category")) json.getString("category") else null
         val category = if (!categoryStr.isNullOrEmpty()) {
             try { VfsCategory.valueOf(categoryStr) } catch (e: Exception) { null }
         } else null
+
+        // Map legacy emojis or category defaults to vector drawable names
+        val iconSymbol = when {
+            category != null -> category.iconSymbol
+            rawIconSymbol == "📁" || rawIconSymbol == "📂" -> "ic_cat_folder"
+            rawIconSymbol == "📱" -> "ic_cat_app"
+            rawIconSymbol == "📞" -> "ic_cat_phone"
+            rawIconSymbol == "🌐" -> "ic_cat_browser"
+            rawIconSymbol == "📷" -> "ic_cat_camera"
+            rawIconSymbol == "💬" -> "ic_cat_social"
+            rawIconSymbol == "🎬" -> "ic_cat_multimedia"
+            rawIconSymbol == "🎮" -> "ic_cat_games"
+            rawIconSymbol == "💼" -> "ic_cat_productivity"
+            rawIconSymbol == "⚡" -> "ic_cat_development"
+            rawIconSymbol == "⚙️" || rawIconSymbol == "💻" -> "ic_cat_system"
+            rawIconSymbol == "📦" -> "ic_cat_unsorted"
+            else -> rawIconSymbol
+        }
 
         val node = VfsNode(
             name = name,

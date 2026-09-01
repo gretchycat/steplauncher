@@ -1040,57 +1040,64 @@ class LauncherActivity : AppCompatActivity() {
             setPadding(40, 25, 40, 25)
         }
 
+        var dialogRef: androidx.appcompat.app.AlertDialog? = null
+
         val btnBrowseImage = Button(this).apply {
             text = "🖼️ Browse Custom Image File..."
             setOnClickListener {
                 pendingIconSelectedCallback = { pickedUriStr ->
                     onIconSelected(pickedUriStr)
+                    dialogRef?.dismiss()
                 }
                 customIconPickerLauncher.launch("image/*")
             }
         }
         layout.addView(btnBrowseImage)
 
-        val etCustom = EditText(this).apply {
-            hint = "Or type custom emoji / icon text..."
-            setText(if (!currentIcon.startsWith("content://") && !currentIcon.startsWith("file://") && !currentIcon.startsWith("/")) currentIcon else "")
-        }
-        layout.addView(etCustom)
-
         val tvSub = TextView(this).apply {
-            text = "Default Category Icons & Emojis:"
+            text = "Select Built-In Category Icon Image:"
             textSize = 13f
             setPadding(0, 15, 0, 10)
         }
         layout.addView(tvSub)
 
-        val defaultIcons = listOf(
-            "📞", "🌐", "📷", "💬", "🎬", "🎮", "💼", "⚡", "⚙️", "📦",
-            "📁", "📂", "🔒", "⭐", "🚀", "⏰", "🔋", "📊", "✉️", "🎵",
-            "🎨", "🛠️", "📱", "💻", "☁️", "🔑", "💡", "🏷️", "📌", "🎯"
+        val builtInIconKeys = listOf(
+            Pair("Phone", "ic_cat_phone"),
+            Pair("Browser", "ic_cat_browser"),
+            Pair("Camera", "ic_cat_camera"),
+            Pair("Social", "ic_cat_social"),
+            Pair("Media", "ic_cat_multimedia"),
+            Pair("Games", "ic_cat_games"),
+            Pair("Work", "ic_cat_productivity"),
+            Pair("Dev", "ic_cat_development"),
+            Pair("System", "ic_cat_system"),
+            Pair("Unsorted", "ic_cat_unsorted"),
+            Pair("Folder", "ic_cat_folder"),
+            Pair("App", "ic_cat_app")
         )
 
         val gridLayout = GridLayout(this).apply {
-            columnCount = 6
+            columnCount = 4
             setPadding(0, 5, 0, 5)
         }
 
-        var dialogRef: androidx.appcompat.app.AlertDialog? = null
-
-        defaultIcons.forEach { iconSymbol ->
-            val btnIcon = Button(this, null, android.R.attr.buttonStyleSmall).apply {
-                text = iconSymbol
-                textSize = 18f
-                setPadding(2, 2, 2, 2)
+        builtInIconKeys.forEach { (label, iconKey) ->
+            val resId = resources.getIdentifier(iconKey, "drawable", packageName)
+            val btnIcon = android.widget.ImageButton(this).apply {
+                if (resId != 0) {
+                    setImageResource(resId)
+                }
+                scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                setPadding(16, 16, 16, 16)
                 setOnClickListener {
-                    onIconSelected(iconSymbol)
+                    onIconSelected(iconKey)
                     dialogRef?.dismiss()
                 }
             }
             val params = GridLayout.LayoutParams().apply {
-                width = (46 * resources.displayMetrics.density).toInt()
-                height = (46 * resources.displayMetrics.density).toInt()
-                setMargins(4, 4, 4, 4)
+                width = (56 * resources.displayMetrics.density).toInt()
+                height = (56 * resources.displayMetrics.density).toInt()
+                setMargins(8, 8, 8, 8)
             }
             gridLayout.addView(btnIcon, params)
         }
@@ -1098,17 +1105,11 @@ class LauncherActivity : AppCompatActivity() {
         val scrollView = ScrollView(this).apply {
             addView(gridLayout)
         }
-        layout.addView(scrollView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (180 * resources.displayMetrics.density).toInt()))
+        layout.addView(scrollView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (200 * resources.displayMetrics.density).toInt()))
 
         dialogRef = MaterialAlertDialogBuilder(this)
-            .setTitle("🎨 Choose Category Icon")
+            .setTitle("🖼️ Choose Icon Image")
             .setView(layout)
-            .setPositiveButton("Use Custom Text") { _, _ ->
-                val txt = etCustom.text.toString().trim()
-                if (txt.isNotEmpty()) {
-                    onIconSelected(txt)
-                }
-            }
             .setNegativeButton("Cancel", null)
             .create()
 
@@ -1818,14 +1819,14 @@ class LauncherActivity : AppCompatActivity() {
             hint = "Folder Name (e.g. Utilities, Games, Retro)"
         }
 
-        var selectedIconSymbol = "📁"
+        var selectedIconSymbol = "ic_cat_folder"
 
         val btnPickIcon = Button(this).apply {
-            text = "🎨 Icon: $selectedIconSymbol"
+            text = "🖼️ Select Icon Image"
             setOnClickListener {
                 showIconPickerDialog(selectedIconSymbol) { newIcon ->
                     selectedIconSymbol = newIcon
-                    text = "🎨 Icon: ${if (selectedIconSymbol.length > 15) "Custom Image 🖼️" else selectedIconSymbol}"
+                    text = "🖼️ Icon: ${if (selectedIconSymbol.length > 15) "Custom Image" else selectedIconSymbol}"
                 }
             }
         }
@@ -1842,7 +1843,7 @@ class LauncherActivity : AppCompatActivity() {
                 if (name.isNotEmpty()) {
                     val created = com.steplauncher.core.vfs.VfsProgramManager.createDirectory(parentPath, name, this)
                     if (created != null) {
-                        if (selectedIconSymbol != "📁") {
+                        if (selectedIconSymbol != "ic_cat_folder") {
                             com.steplauncher.core.vfs.VfsProgramManager.editNode(created.path, name, selectedIconSymbol, this)
                         }
                         Toast.makeText(this, "📁 Folder created: $name", Toast.LENGTH_SHORT).show()

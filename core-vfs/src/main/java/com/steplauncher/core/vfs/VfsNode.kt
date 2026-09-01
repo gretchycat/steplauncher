@@ -10,6 +10,6 @@ data class VfsNode(
     val isDirectory: Boolean,
     val category: VfsCategory? = null,
     val targetPackage: String? = null,
-    var iconSymbol: String = if (isDirectory) "📁" else "📱",
+    var iconSymbol: String = if (isDirectory) "ic_cat_folder" else "ic_cat_app",
     val children: MutableList<VfsNode> = mutableListOf()
 )
