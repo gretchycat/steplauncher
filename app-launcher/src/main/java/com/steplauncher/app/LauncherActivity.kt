@@ -1187,6 +1187,10 @@ class LauncherActivity : AppCompatActivity() {
         btnRow.addView(btnMultiSelect, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
         layout.addView(btnRow)
 
+        var btnBatchMove: Button? = null
+        var btnBatchCopy: Button? = null
+        var btnBatchDelete: Button? = null
+
         // Batch Actions Bar (shown when Multi-Select mode is active)
         if (isVfsMultiSelectMode) {
             val batchRow = LinearLayout(this).apply {
@@ -1194,23 +1198,23 @@ class LauncherActivity : AppCompatActivity() {
                 setPadding(0, 0, 0, 10)
             }
 
-            val btnBatchMove = Button(this).apply {
+            btnBatchMove = Button(this).apply {
                 text = "↔️ Move (${selectedVfsPackages.size})"
                 textSize = 10f
                 isEnabled = selectedVfsPackages.isNotEmpty()
                 setOnClickListener {
-                    showCollapsibleVfsBatchDirectoryPicker(selectedVfsPackages, currentNode.children, currentNode.path, isMove = true)
+                    showCollapsibleVfsDirectoryPicker(pkgsToMove = selectedVfsPackages, availableNodes = currentNode.children, sourceDirPath = currentNode.path)
                 }
             }
-            val btnBatchCopy = Button(this).apply {
+            btnBatchCopy = Button(this).apply {
                 text = "📋 Copy (${selectedVfsPackages.size})"
                 textSize = 10f
                 isEnabled = selectedVfsPackages.isNotEmpty()
                 setOnClickListener {
-                    showCollapsibleVfsBatchDirectoryPicker(selectedVfsPackages, currentNode.children, currentNode.path, isMove = false)
+                    showCollapsibleVfsDirectoryPicker(pkgsToMove = selectedVfsPackages, availableNodes = currentNode.children, sourceDirPath = currentNode.path)
                 }
             }
-            val btnBatchDelete = Button(this).apply {
+            btnBatchDelete = Button(this).apply {
                 text = "🗑️ Delete (${selectedVfsPackages.size})"
                 textSize = 10f
                 isEnabled = selectedVfsPackages.isNotEmpty()
@@ -1238,11 +1242,13 @@ class LauncherActivity : AppCompatActivity() {
             setPadding(4, 4, 4, 4)
         }
 
-        val adapter = VfsGridAdapter(
+        var adapter: VfsGridAdapter? = null
+
+        adapter = VfsGridAdapter(
             items = displayNodes,
             isMultiSelectMode = isVfsMultiSelectMode,
             selectedPackages = selectedVfsPackages,
-            onItemClick = { node ->
+            onItemClick = { node, pos ->
                 if (isVfsMultiSelectMode && !node.isDirectory && !node.targetPackage.isNullOrEmpty()) {
                     val pkg = node.targetPackage!!
                     if (selectedVfsPackages.contains(pkg)) {
@@ -1250,7 +1256,27 @@ class LauncherActivity : AppCompatActivity() {
                     } else {
                         selectedVfsPackages.add(pkg)
                     }
-                    showVfsProgramExplorerDialog(currentNode.path)
+
+                    // Update adapter in-place without scrolling to top!
+                    adapter?.selectedPackages = selectedVfsPackages
+                    adapter?.notifyItemChanged(pos)
+
+                    // Update header & batch buttons in-place!
+                    val formatted = com.steplauncher.core.vfs.VfsProgramManager.formatVfsPath(currentNode.path)
+                    tvHeader.text = "📂 Path: $formatted (${currentNode.children.size} items) [☑️ ${selectedVfsPackages.size} Selected]"
+
+                    btnBatchMove?.apply {
+                        text = "↔️ Move (${selectedVfsPackages.size})"
+                        isEnabled = selectedVfsPackages.isNotEmpty()
+                    }
+                    btnBatchCopy?.apply {
+                        text = "📋 Copy (${selectedVfsPackages.size})"
+                        isEnabled = selectedVfsPackages.isNotEmpty()
+                    }
+                    btnBatchDelete?.apply {
+                        text = "🗑️ Delete (${selectedVfsPackages.size})"
+                        isEnabled = selectedVfsPackages.isNotEmpty()
+                    }
                 } else if (node.isDirectory) {
                     showVfsProgramExplorerDialog(node.path)
                 } else if (!node.targetPackage.isNullOrEmpty()) {
@@ -1309,7 +1335,7 @@ class LauncherActivity : AppCompatActivity() {
                             DockManager.launchAndAddToRunningStack(node.name, node.iconSymbol, pkg, launchIntent)
                         }
                     }
-                    "↔️ Move / Copy to Directory..." -> showCollapsibleVfsDirectoryPicker(node, currentDirPath)
+                    "↔️ Move / Copy to Directory..." -> showCollapsibleVfsDirectoryPicker(nodeToMove = node, sourceDirPath = currentDirPath)
                     "🗑️ Delete from this Directory" -> {
                         com.steplauncher.core.vfs.VfsProgramManager.removeAppFromDirectory(currentDirPath, pkg, this)
                         Toast.makeText(this, "Deleted ${node.name} from $formattedCurrent", Toast.LENGTH_SHORT).show()
@@ -1329,7 +1355,7 @@ class LauncherActivity : AppCompatActivity() {
             .setItems(actions) { _, which ->
                 when (which) {
                     0 -> showVfsProgramExplorerDialog(node.path)
-                    1 -> showCollapsibleVfsDirectoryPicker(node, currentDirPath)
+                    1 -> showCollapsibleVfsDirectoryPicker(nodeToMove = node, sourceDirPath = currentDirPath)
                     2 -> {
                         com.steplauncher.core.vfs.VfsProgramManager.deleteNode(node.path, this)
                         Toast.makeText(this, "Deleted directory ${node.name}", Toast.LENGTH_SHORT).show()
@@ -1347,13 +1373,16 @@ class LauncherActivity : AppCompatActivity() {
     )
 
     private fun showCollapsibleVfsDirectoryPicker(
-        nodeToMove: com.steplauncher.core.vfs.VfsNode,
+        nodeToMove: com.steplauncher.core.vfs.VfsNode? = null,
+        pkgsToMove: Set<String>? = null,
+        availableNodes: List<com.steplauncher.core.vfs.VfsNode> = emptyList(),
         sourceDirPath: String
     ) {
         val root = com.steplauncher.core.vfs.VfsProgramManager.rootNode
         val expandedPaths = mutableSetOf<String>().apply {
             add("/VFS")
         }
+        var selectedTargetDir: com.steplauncher.core.vfs.VfsNode? = null
 
         fun buildVisibleList(): List<CollapsibleTreeNode> {
             val result = mutableListOf<CollapsibleTreeNode>()
@@ -1372,21 +1401,34 @@ class LauncherActivity : AppCompatActivity() {
         }
 
         fun showPicker() {
+            val mainLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(20, 20, 20, 20)
+            }
+
+            val cbMoveMode = android.widget.CheckBox(this).apply {
+                text = "☑️ Move mode (uncheck for Copy)"
+                isChecked = true
+                textSize = 14f
+                setPadding(10, 10, 10, 20)
+            }
+            mainLayout.addView(cbMoveMode)
+
             val visibleNodes = buildVisibleList()
             val scrollView = android.widget.ScrollView(this).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    (320 * resources.displayMetrics.density).toInt()
+                    (300 * resources.displayMetrics.density).toInt()
                 )
             }
 
             val container = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(20, 10, 20, 10)
+                setPadding(10, 10, 10, 10)
             }
             scrollView.addView(container)
 
-            var dialogRef: androidx.appcompat.app.AlertDialog? = null
+            val rowViews = mutableListOf<TextView>()
 
             visibleNodes.forEach { treeItem ->
                 val targetDir = treeItem.node
@@ -1401,201 +1443,94 @@ class LauncherActivity : AppCompatActivity() {
                     setTextColor(Color.WHITE)
                     setPadding(20, 16, 20, 16)
                     setOnClickListener {
-                        dialogRef?.dismiss()
                         if (hasSubDirs && !treeItem.isExpanded) {
                             expandedPaths.add(targetDir.path)
                             showPicker()
                         } else {
-                            val targetFormatted = com.steplauncher.core.vfs.VfsProgramManager.formatVfsPath(targetDir.path)
-                            val srcFormatted = com.steplauncher.core.vfs.VfsProgramManager.formatVfsPath(sourceDirPath)
-                            val opts = mutableListOf<String>()
+                            selectedTargetDir = targetDir
+                            rowViews.forEach { it.setBackgroundColor(Color.TRANSPARENT) }
+                            setBackgroundColor(Color.argb(120, 0, 229, 255))
+                        }
+                    }
+                }
+                rowViews.add(tvRow)
+                container.addView(tvRow)
+            }
 
-                            if (nodeToMove.isDirectory) {
-                                opts.add("↔️ Move Directory to $targetFormatted")
+            mainLayout.addView(scrollView)
+
+            val titleTarget = when {
+                nodeToMove != null -> nodeToMove.name
+                pkgsToMove != null -> "${pkgsToMove.size} Apps"
+                else -> "Selection"
+            }
+
+            MaterialAlertDialogBuilder(this)
+                .setTitle("📂 Choose Target Directory ($titleTarget)")
+                .setView(mainLayout)
+                .setPositiveButton("OK") { _, _ ->
+                    val targetDir = selectedTargetDir
+                    if (targetDir == null) {
+                        Toast.makeText(this@LauncherActivity, "Please tap a target directory from the list", Toast.LENGTH_SHORT).show()
+                        return@setPositiveButton
+                    }
+
+                    val isMove = cbMoveMode.isChecked
+                    val targetFormatted = com.steplauncher.core.vfs.VfsProgramManager.formatVfsPath(targetDir.path)
+
+                    if (nodeToMove != null) {
+                        if (nodeToMove.isDirectory) {
+                            if (!com.steplauncher.core.vfs.VfsProgramManager.isMoveValid(nodeToMove.path, targetDir.path)) {
+                                Toast.makeText(this@LauncherActivity, "⚠️ Cannot move folder into itself or its subfolder!", Toast.LENGTH_SHORT).show()
                             } else {
-                                opts.add("↔️ Move (Remove from $srcFormatted)")
-                                opts.add("📋 Copy (Keep in $srcFormatted)")
-                            }
-
-                            if (hasSubDirs && treeItem.isExpanded) {
-                                opts.add("📁 Collapse Subfolders")
-                            }
-
-                            MaterialAlertDialogBuilder(this@LauncherActivity)
-                                .setTitle("Select Action for $targetFormatted")
-                                .setItems(opts.toTypedArray()) { _, optIdx ->
-                                    val chosenAction = opts[optIdx]
-                                    when {
-                                        chosenAction.startsWith("↔️ Move Directory") -> {
-                                            if (!com.steplauncher.core.vfs.VfsProgramManager.isMoveValid(nodeToMove.path, targetDir.path)) {
-                                                Toast.makeText(this@LauncherActivity, "⚠️ Cannot move folder into itself or its subfolder!", Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                val moved = com.steplauncher.core.vfs.VfsProgramManager.moveDirectory(
-                                                    nodeToMove.path, targetDir.path, this@LauncherActivity
-                                                )
-                                                if (moved) {
-                                                    Toast.makeText(this@LauncherActivity, "Moved folder ${nodeToMove.name} to $targetFormatted", Toast.LENGTH_SHORT).show()
-                                                }
-                                            }
-                                            showVfsProgramExplorerDialog(sourceDirPath)
-                                        }
-                                        chosenAction.startsWith("↔️ Move") -> {
-                                            val moved = com.steplauncher.core.vfs.VfsProgramManager.moveAppShortcut(
-                                                sourceDirPath, targetDir.path, nodeToMove.targetPackage!!, nodeToMove.name, nodeToMove.iconSymbol, this@LauncherActivity
-                                            )
-                                            if (moved) {
-                                                Toast.makeText(this@LauncherActivity, "Moved ${nodeToMove.name} to $targetFormatted", Toast.LENGTH_SHORT).show()
-                                            }
-                                            showVfsProgramExplorerDialog(sourceDirPath)
-                                        }
-                                        chosenAction.startsWith("📋 Copy") -> {
-                                            val copied = com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
-                                                targetDir.path, nodeToMove.targetPackage!!, nodeToMove.name, nodeToMove.iconSymbol, this@LauncherActivity
-                                            )
-                                            if (copied) {
-                                                Toast.makeText(this@LauncherActivity, "Copied ${nodeToMove.name} to $targetFormatted", Toast.LENGTH_SHORT).show()
-                                            }
-                                            showVfsProgramExplorerDialog(sourceDirPath)
-                                        }
-                                        else -> {
-                                            expandedPaths.remove(targetDir.path)
-                                            showPicker()
-                                        }
-                                    }
+                                val moved = com.steplauncher.core.vfs.VfsProgramManager.moveDirectory(
+                                    nodeToMove.path, targetDir.path, this@LauncherActivity
+                                )
+                                if (moved) {
+                                    Toast.makeText(this@LauncherActivity, "Moved folder ${nodeToMove.name} to $targetFormatted", Toast.LENGTH_SHORT).show()
                                 }
-                                .setNegativeButton("Back") { _, _ -> showPicker() }
-                                .show()
-                        }
-                    }
-                }
-                container.addView(tvRow)
-            }
-
-            dialogRef = MaterialAlertDialogBuilder(this)
-                .setTitle("📂 Target Directory (${nodeToMove.name})")
-                .setView(scrollView)
-                .setNegativeButton("Cancel", null)
-                .show()
-        }
-
-        showPicker()
-    }
-
-    private fun showCollapsibleVfsBatchDirectoryPicker(
-        pkgsToMove: Set<String>,
-        availableNodes: List<com.steplauncher.core.vfs.VfsNode>,
-        sourceDirPath: String,
-        isMove: Boolean
-    ) {
-        val root = com.steplauncher.core.vfs.VfsProgramManager.rootNode
-        val expandedPaths = mutableSetOf<String>().apply {
-            add("/VFS")
-        }
-
-        fun buildVisibleList(): List<CollapsibleTreeNode> {
-            val result = mutableListOf<CollapsibleTreeNode>()
-            fun traverse(curr: com.steplauncher.core.vfs.VfsNode, depth: Int) {
-                if (!curr.isDirectory) return
-                val isExp = expandedPaths.contains(curr.path)
-                result.add(CollapsibleTreeNode(curr, depth, isExp))
-                if (isExp) {
-                    curr.children.filter { it.isDirectory }.forEach { child ->
-                        traverse(child, depth + 1)
-                    }
-                }
-            }
-            traverse(root, 0)
-            return result
-        }
-
-        fun showPicker() {
-            val visibleNodes = buildVisibleList()
-            val scrollView = android.widget.ScrollView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    (320 * resources.displayMetrics.density).toInt()
-                )
-            }
-
-            val container = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(20, 10, 20, 10)
-            }
-            scrollView.addView(container)
-
-            var dialogRef: androidx.appcompat.app.AlertDialog? = null
-
-            visibleNodes.forEach { treeItem ->
-                val targetDir = treeItem.node
-                val hasSubDirs = targetDir.children.any { it.isDirectory }
-                val indent = "    ".repeat(treeItem.depth)
-                val arrow = if (hasSubDirs) (if (treeItem.isExpanded) "▼ " else "▶ ") else "  "
-                val displayLabel = if (targetDir.path == "/VFS") "Root" else targetDir.name
-
-                val tvRow = TextView(this).apply {
-                    text = "$indent$arrow${targetDir.iconSymbol} $displayLabel"
-                    textSize = 14f
-                    setTextColor(Color.WHITE)
-                    setPadding(20, 16, 20, 16)
-                    setOnClickListener {
-                        dialogRef?.dismiss()
-                        if (hasSubDirs && !treeItem.isExpanded) {
-                            expandedPaths.add(targetDir.path)
-                            showPicker()
+                            }
                         } else {
-                            val targetFormatted = com.steplauncher.core.vfs.VfsProgramManager.formatVfsPath(targetDir.path)
-                            val actionTitle = if (isMove) "↔️ Batch Move ${pkgsToMove.size} Apps to $targetFormatted" else "📋 Batch Copy ${pkgsToMove.size} Apps to $targetFormatted"
-
-                            val opts = mutableListOf<String>()
-                            opts.add(actionTitle)
-                            if (hasSubDirs && treeItem.isExpanded) {
-                                opts.add("📁 Collapse Subfolders")
-                            }
-
-                            MaterialAlertDialogBuilder(this@LauncherActivity)
-                                .setTitle("Select Action for $targetFormatted")
-                                .setItems(opts.toTypedArray()) { _, optIdx ->
-                                    val chosenAction = opts[optIdx]
-                                    if (chosenAction == actionTitle) {
-                                        pkgsToMove.forEach { pkg ->
-                                            val matchedNode = availableNodes.find { !it.isDirectory && it.targetPackage == pkg }
-                                            val label = matchedNode?.name ?: pkg
-                                            val symbol = matchedNode?.iconSymbol ?: "📱"
-
-                                            if (isMove) {
-                                                com.steplauncher.core.vfs.VfsProgramManager.moveAppShortcut(
-                                                    sourceDirPath, targetDir.path, pkg, label, symbol, this@LauncherActivity
-                                                )
-                                            } else {
-                                                com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
-                                                    targetDir.path, pkg, label, symbol, this@LauncherActivity
-                                                )
-                                            }
-                                        }
-
-                                        val actVerb = if (isMove) "Moved" else "Copied"
-                                        Toast.makeText(this@LauncherActivity, "$actVerb ${pkgsToMove.size} apps to $targetFormatted", Toast.LENGTH_SHORT).show()
-
-                                        selectedVfsPackages.clear()
-                                        isVfsMultiSelectMode = false
-                                        showVfsProgramExplorerDialog(sourceDirPath)
-                                    } else {
-                                        expandedPaths.remove(targetDir.path)
-                                        showPicker()
-                                    }
+                            if (isMove) {
+                                val moved = com.steplauncher.core.vfs.VfsProgramManager.moveAppShortcut(
+                                    sourceDirPath, targetDir.path, nodeToMove.targetPackage!!, nodeToMove.name, nodeToMove.iconSymbol, this@LauncherActivity
+                                )
+                                if (moved) {
+                                    Toast.makeText(this@LauncherActivity, "Moved ${nodeToMove.name} to $targetFormatted", Toast.LENGTH_SHORT).show()
                                 }
-                                .setNegativeButton("Back") { _, _ -> showPicker() }
-                                .show()
+                            } else {
+                                val copied = com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
+                                    targetDir.path, nodeToMove.targetPackage!!, nodeToMove.name, nodeToMove.iconSymbol, this@LauncherActivity
+                                )
+                                if (copied) {
+                                    Toast.makeText(this@LauncherActivity, "Copied ${nodeToMove.name} to $targetFormatted", Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         }
-                    }
-                }
-                container.addView(tvRow)
-            }
+                    } else if (!pkgsToMove.isNullOrEmpty()) {
+                        pkgsToMove.forEach { pkg ->
+                            val matchedNode = availableNodes.find { !it.isDirectory && it.targetPackage == pkg }
+                            val label = matchedNode?.name ?: pkg
+                            val symbol = matchedNode?.iconSymbol ?: "📱"
 
-            val titleAction = if (isMove) "Batch Move" else "Batch Copy"
-            dialogRef = MaterialAlertDialogBuilder(this)
-                .setTitle("📂 Target Directory ($titleAction ${pkgsToMove.size} Apps)")
-                .setView(scrollView)
+                            if (isMove) {
+                                com.steplauncher.core.vfs.VfsProgramManager.moveAppShortcut(
+                                    sourceDirPath, targetDir.path, pkg, label, symbol, this@LauncherActivity
+                                )
+                            } else {
+                                com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
+                                    targetDir.path, pkg, label, symbol, this@LauncherActivity
+                                )
+                            }
+                        }
+                        val actVerb = if (isMove) "Moved" else "Copied"
+                        Toast.makeText(this@LauncherActivity, "$actVerb ${pkgsToMove.size} apps to $targetFormatted", Toast.LENGTH_SHORT).show()
+
+                        selectedVfsPackages.clear()
+                        isVfsMultiSelectMode = false
+                    }
+                    showVfsProgramExplorerDialog(sourceDirPath)
+                }
                 .setNegativeButton("Cancel", null)
                 .show()
         }

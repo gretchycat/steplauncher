@@ -14,13 +14,13 @@ import com.steplauncher.core.vfs.VfsNode
 
 /**
  * RecyclerView Adapter for displaying VFS Program Manager items in a scrollable grid with real application icons.
- * Supports multi-selection for batch operations (move, copy, delete).
+ * Supports multi-selection for batch operations (move, copy, delete) with in-place position updates.
  */
 class VfsGridAdapter(
     private val items: List<VfsNode>,
     var isMultiSelectMode: Boolean = false,
     var selectedPackages: Set<String> = emptySet(),
-    private val onItemClick: (VfsNode) -> Unit,
+    private val onItemClick: (VfsNode, Int) -> Unit,
     private val onItemLongClick: (VfsNode, View) -> Unit
 ) : RecyclerView.Adapter<VfsGridAdapter.VfsViewHolder>() {
 
@@ -113,7 +113,7 @@ class VfsGridAdapter(
         // Bind movement-tolerant touch gestures
         ForgivingTouchHelper.bind(
             view = holder.itemView,
-            onClick = { onItemClick(item) },
+            onClick = { onItemClick(item, holder.adapterPosition) },
             onLongClick = { view ->
                 onItemLongClick(item, view)
                 true
