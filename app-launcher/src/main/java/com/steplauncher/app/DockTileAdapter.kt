@@ -306,23 +306,42 @@ class DockTileAdapter(
             }
         }
 
-        // Notification / Attention Badge & Dock Anchor Badge Handling
-        if (tile.isAttentionRequested && !tile.attentionBadgeText.isNullOrEmpty()) {
+        // Resolve Unread Badges for Email, Messaging, Phone, Category Links, System Alerts, and Dock Anchors
+        val packageForBadge = when (tile) {
+            is DockTile.AppShortcut -> tile.packageName
+            is DockTile.RunningTask -> tile.packageName
+            is DockTile.ExternalDockApp -> tile.descriptor.packageName
+            else -> null
+        }
+
+        val resolvedBadgeText = if (tile.isAttentionRequested && !tile.attentionBadgeText.isNullOrEmpty()) {
+            tile.attentionBadgeText
+        } else if (packageForBadge != null) {
+            com.steplauncher.core.telemetry.UnreadBadgeResolver.getBadgeTextForPackage(holder.itemView.context, packageForBadge)
+        } else if (tile is DockTile.VfsCategoryLink) {
+            when (tile.category) {
+                com.steplauncher.core.vfs.VfsCategory.PHONE -> com.steplauncher.core.telemetry.UnreadBadgeResolver.getMissedCallCount(holder.itemView.context).takeIf { it > 0 }?.toString()
+                com.steplauncher.core.vfs.VfsCategory.SOCIAL_MEDIA -> com.steplauncher.core.telemetry.UnreadBadgeResolver.getUnreadSmsCount(holder.itemView.context).takeIf { it > 0 }?.toString()
+                com.steplauncher.core.vfs.VfsCategory.PRODUCTIVITY -> com.steplauncher.core.telemetry.UnreadBadgeResolver.getUnreadEmailCount(holder.itemView.context).takeIf { it > 0 }?.toString()
+                else -> null
+            }
+        } else if (tile is DockTile.DockAnchor) {
+            "${DockManager.currentWorkspaceIndex + 1}"
+        } else {
+            null
+        }
+
+        if (!resolvedBadgeText.isNullOrEmpty()) {
             holder.tvBadge.visibility = View.VISIBLE
-            holder.tvBadge.text = tile.attentionBadgeText
+            holder.tvBadge.text = resolvedBadgeText
             try {
                 val bgInt = Color.parseColor(DockManager.badgeBgColorHex)
                 val textInt = Color.parseColor(DockManager.badgeTextColorHex)
                 holder.tvBadge.background?.mutate()?.setTint(bgInt)
                 holder.tvBadge.setTextColor(textInt)
-            } catch (e: Exception) {}
-        } else if (tile is DockTile.DockAnchor) {
-            holder.tvBadge.visibility = View.VISIBLE
-            holder.tvBadge.text = "${DockManager.currentWorkspaceIndex + 1}"
-            try {
-                holder.tvBadge.background?.mutate()?.clearColorFilter()
-                holder.tvBadge.setTextColor(Color.parseColor(DockManager.textColorHex))
-            } catch (e: Exception) {}
+            } catch (e: Exception) {
+                holder.tvBadge.setTextColor(Color.WHITE)
+            }
         } else {
             holder.tvBadge.visibility = View.GONE
         }

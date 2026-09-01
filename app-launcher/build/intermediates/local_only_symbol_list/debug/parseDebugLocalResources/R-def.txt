@@ -30,6 +30,8 @@ drawable ic_launcher
 id btn_close_settings
 id btn_pick_accent_color
 id btn_pick_attention_color
+id btn_pick_badge_bg_color
+id btn_pick_badge_text_color
 id btn_pick_graphic_color
 id btn_pick_high_color
 id btn_pick_low_color

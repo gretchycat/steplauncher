@@ -123,10 +123,14 @@ class VfsGridAdapter(
             holder.tvCheck.visibility = View.GONE
         }
 
-        // Attention State & Badge Check
+        // Attention State & Badge Check via UnreadBadgeResolver
         val targetPkg = item.targetPackage
         val isAttention = if (!targetPkg.isNullOrEmpty()) DockManager.isTileAttentionRequested(targetPkg) else false
-        val badgeText = if (!targetPkg.isNullOrEmpty()) DockManager.getTileBadgeText(targetPkg) else null
+        val badgeText = if (!targetPkg.isNullOrEmpty()) {
+            DockManager.getTileBadgeText(targetPkg) ?: com.steplauncher.core.telemetry.UnreadBadgeResolver.getBadgeTextForPackage(context, targetPkg)
+        } else {
+            null
+        }
 
         // Tile background tint swap if attention requested or selected
         val isSelected = !pkg.isNullOrEmpty() && selectedPackages.contains(pkg)
@@ -150,13 +154,15 @@ class VfsGridAdapter(
         // Render Badge
         if (isAttention || !badgeText.isNullOrEmpty()) {
             holder.tvBadge.visibility = View.VISIBLE
-            holder.tvBadge.text = badgeText ?: "🔴"
+            holder.tvBadge.text = badgeText ?: "!"
             try {
                 val bgInt = Color.parseColor(DockManager.badgeBgColorHex)
                 val textInt = Color.parseColor(DockManager.badgeTextColorHex)
                 holder.tvBadge.background?.mutate()?.setTint(bgInt)
                 holder.tvBadge.setTextColor(textInt)
-            } catch (e: Exception) {}
+            } catch (e: Exception) {
+                holder.tvBadge.setTextColor(Color.WHITE)
+            }
         } else {
             holder.tvBadge.visibility = View.GONE
         }

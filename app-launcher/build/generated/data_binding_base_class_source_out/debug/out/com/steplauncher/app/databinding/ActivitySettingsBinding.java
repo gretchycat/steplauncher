@@ -30,6 +30,12 @@ public final class ActivitySettingsBinding implements ViewBinding {
   public final MaterialButton btnPickAttentionColor;
 
   @NonNull
+  public final MaterialButton btnPickBadgeBgColor;
+
+  @NonNull
+  public final MaterialButton btnPickBadgeTextColor;
+
+  @NonNull
   public final MaterialButton btnPickGraphicColor;
 
   @NonNull
@@ -73,7 +79,8 @@ public final class ActivitySettingsBinding implements ViewBinding {
 
   private ActivitySettingsBinding(@NonNull LinearLayout rootView,
       @NonNull MaterialButton btnCloseSettings, @NonNull MaterialButton btnPickAccentColor,
-      @NonNull MaterialButton btnPickAttentionColor, @NonNull MaterialButton btnPickGraphicColor,
+      @NonNull MaterialButton btnPickAttentionColor, @NonNull MaterialButton btnPickBadgeBgColor,
+      @NonNull MaterialButton btnPickBadgeTextColor, @NonNull MaterialButton btnPickGraphicColor,
       @NonNull MaterialButton btnPickHighColor, @NonNull MaterialButton btnPickLowColor,
       @NonNull MaterialButton btnPickMedColor, @NonNull MaterialButton btnPickTextColor,
       @NonNull MaterialButton btnResetDefaults, @NonNull MaterialButton btnSize28,
@@ -85,6 +92,8 @@ public final class ActivitySettingsBinding implements ViewBinding {
     this.btnCloseSettings = btnCloseSettings;
     this.btnPickAccentColor = btnPickAccentColor;
     this.btnPickAttentionColor = btnPickAttentionColor;
+    this.btnPickBadgeBgColor = btnPickBadgeBgColor;
+    this.btnPickBadgeTextColor = btnPickBadgeTextColor;
     this.btnPickGraphicColor = btnPickGraphicColor;
     this.btnPickHighColor = btnPickHighColor;
     this.btnPickLowColor = btnPickLowColor;
@@ -143,6 +152,18 @@ public final class ActivitySettingsBinding implements ViewBinding {
       id = R.id.btn_pick_attention_color;
       MaterialButton btnPickAttentionColor = ViewBindings.findChildViewById(rootView, id);
       if (btnPickAttentionColor == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_pick_badge_bg_color;
+      MaterialButton btnPickBadgeBgColor = ViewBindings.findChildViewById(rootView, id);
+      if (btnPickBadgeBgColor == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_pick_badge_text_color;
+      MaterialButton btnPickBadgeTextColor = ViewBindings.findChildViewById(rootView, id);
+      if (btnPickBadgeTextColor == null) {
         break missingId;
       }
 
@@ -231,10 +252,10 @@ public final class ActivitySettingsBinding implements ViewBinding {
       }
 
       return new ActivitySettingsBinding((LinearLayout) rootView, btnCloseSettings,
-          btnPickAccentColor, btnPickAttentionColor, btnPickGraphicColor, btnPickHighColor,
-          btnPickLowColor, btnPickMedColor, btnPickTextColor, btnResetDefaults, btnSize28,
-          btnSize40, btnSize56, btnSize72, btnThemeCyber, btnThemeMatrix, btnThemeSunset,
-          tvCurrentIconSize);
+          btnPickAccentColor, btnPickAttentionColor, btnPickBadgeBgColor, btnPickBadgeTextColor,
+          btnPickGraphicColor, btnPickHighColor, btnPickLowColor, btnPickMedColor, btnPickTextColor,
+          btnResetDefaults, btnSize28, btnSize40, btnSize56, btnSize72, btnThemeCyber,
+          btnThemeMatrix, btnThemeSunset, tvCurrentIconSize);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

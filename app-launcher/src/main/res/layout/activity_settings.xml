@@ -198,6 +198,30 @@
                     android:gravity="start|center_vertical"
                     app:strokeColor="#FF3D00" />
 
+                <!-- 5. Badge Background Color -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_pick_badge_bg_color"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="🔴 Notification Badge Background: #FF1744"
+                    android:textColor="#FF1744"
+                    android:gravity="start|center_vertical"
+                    app:strokeColor="#FF1744" />
+
+                <!-- 6. Badge Text Color -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_pick_badge_text_color"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="🔤 Notification Badge Text: #FFFFFF"
+                    android:textColor="#FFFFFF"
+                    android:gravity="start|center_vertical"
+                    app:strokeColor="#FFFFFF" />
+
             </LinearLayout>
 
             <!-- Section 3: Telemetry Threshold Colors -->

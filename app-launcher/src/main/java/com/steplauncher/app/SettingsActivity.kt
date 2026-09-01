@@ -80,6 +80,32 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
+        // 5. Badge Background Color
+        binding.btnPickBadgeBgColor.setOnClickListener {
+            ColorPickerDialogHelper.show(
+                context = this,
+                title = "🔴 Choose Notification Badge Background Color",
+                initialColorHex = DockManager.badgeBgColorHex
+            ) { hex ->
+                DockManager.updateThemeColors(badgeBgHex = hex, context = this)
+                updateColorLabels()
+                Toast.makeText(this, "Badge Background set to $hex", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // 6. Badge Text Color
+        binding.btnPickBadgeTextColor.setOnClickListener {
+            ColorPickerDialogHelper.show(
+                context = this,
+                title = "🔤 Choose Notification Badge Text Color",
+                initialColorHex = DockManager.badgeTextColorHex
+            ) { hex ->
+                DockManager.updateThemeColors(badgeTextHex = hex, context = this)
+                updateColorLabels()
+                Toast.makeText(this, "Badge Text Color set to $hex", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         // 5. High Threshold Alert Color
         binding.btnPickHighColor.setOnClickListener {
             ColorPickerDialogHelper.show(
@@ -204,6 +230,12 @@ class SettingsActivity : AppCompatActivity() {
 
         binding.btnPickAttentionColor.text = "🚨 Attention Alert Tint: ${DockManager.attentionColorHex}"
         try { binding.btnPickAttentionColor.setTextColor(Color.parseColor(DockManager.attentionColorHex)) } catch (e: Exception) {}
+
+        binding.btnPickBadgeBgColor.text = "🔴 Notification Badge Background: ${DockManager.badgeBgColorHex}"
+        try { binding.btnPickBadgeBgColor.setTextColor(Color.parseColor(DockManager.badgeBgColorHex)) } catch (e: Exception) {}
+
+        binding.btnPickBadgeTextColor.text = "🔤 Notification Badge Text: ${DockManager.badgeTextColorHex}"
+        try { binding.btnPickBadgeTextColor.setTextColor(Color.parseColor(DockManager.badgeTextColorHex)) } catch (e: Exception) {}
 
         binding.btnPickHighColor.text = "🔴 High Threshold Alert Color: ${DockManager.colorHighHex}"
         try { binding.btnPickHighColor.setTextColor(Color.parseColor(DockManager.colorHighHex)) } catch (e: Exception) {}
