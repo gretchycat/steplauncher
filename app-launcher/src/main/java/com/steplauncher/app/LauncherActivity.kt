@@ -1311,52 +1311,51 @@ class LauncherActivity : AppCompatActivity() {
                     val targetDir = selectedTreeItem.node
                     val hasSubDirs = targetDir.children.any { it.isDirectory }
 
-                    val opts = mutableListOf<String>()
-                    opts.add("↔️ Move (Remove from $sourceDirPath)")
-                    opts.add("📋 Copy (Keep in $sourceDirPath)")
-                    if (hasSubDirs) {
-                        if (selectedTreeItem.isExpanded) {
+                    if (hasSubDirs && !selectedTreeItem.isExpanded) {
+                        // Default tap action on unexpanded folder with subfolders: Expand immediately!
+                        expandedPaths.add(targetDir.path)
+                        showPicker()
+                    } else {
+                        // Tapping an expanded folder or leaf folder: Prompt for Move/Copy/Collapse selection
+                        val opts = mutableListOf<String>()
+                        opts.add("↔️ Move (Remove from $sourceDirPath)")
+                        opts.add("📋 Copy (Keep in $sourceDirPath)")
+                        if (hasSubDirs && selectedTreeItem.isExpanded) {
                             opts.add("📁 Collapse Subfolders")
-                        } else {
-                            opts.add("📂 Expand Subfolders")
                         }
-                    }
 
-                    MaterialAlertDialogBuilder(this@LauncherActivity)
-                        .setTitle("Select Action for ${targetDir.path}")
-                        .setItems(opts.toTypedArray()) { _, optIdx ->
-                            val chosenAction = opts[optIdx]
-                            when {
-                                chosenAction.startsWith("↔️ Move") -> {
-                                    val moved = com.steplauncher.core.vfs.VfsProgramManager.moveAppShortcut(
-                                        sourceDirPath, targetDir.path, appNode.targetPackage!!, appNode.name, appNode.iconSymbol, this@LauncherActivity
-                                    )
-                                    if (moved) {
-                                        Toast.makeText(this@LauncherActivity, "Moved ${appNode.name} to ${targetDir.path}", Toast.LENGTH_SHORT).show()
+                        MaterialAlertDialogBuilder(this@LauncherActivity)
+                            .setTitle("Select Action for ${targetDir.path}")
+                            .setItems(opts.toTypedArray()) { _, optIdx ->
+                                val chosenAction = opts[optIdx]
+                                when {
+                                    chosenAction.startsWith("↔️ Move") -> {
+                                        val moved = com.steplauncher.core.vfs.VfsProgramManager.moveAppShortcut(
+                                            sourceDirPath, targetDir.path, appNode.targetPackage!!, appNode.name, appNode.iconSymbol, this@LauncherActivity
+                                        )
+                                        if (moved) {
+                                            Toast.makeText(this@LauncherActivity, "Moved ${appNode.name} to ${targetDir.path}", Toast.LENGTH_SHORT).show()
+                                        }
+                                        showVfsProgramExplorerDialog(sourceDirPath)
                                     }
-                                    showVfsProgramExplorerDialog(sourceDirPath)
-                                }
-                                chosenAction.startsWith("📋 Copy") -> {
-                                    val copied = com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
-                                        targetDir.path, appNode.targetPackage!!, appNode.name, appNode.iconSymbol, this@LauncherActivity
-                                    )
-                                    if (copied) {
-                                        Toast.makeText(this@LauncherActivity, "Copied ${appNode.name} to ${targetDir.path}", Toast.LENGTH_SHORT).show()
+                                    chosenAction.startsWith("📋 Copy") -> {
+                                        val copied = com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
+                                            targetDir.path, appNode.targetPackage!!, appNode.name, appNode.iconSymbol, this@LauncherActivity
+                                        )
+                                        if (copied) {
+                                            Toast.makeText(this@LauncherActivity, "Copied ${appNode.name} to ${targetDir.path}", Toast.LENGTH_SHORT).show()
+                                        }
+                                        showVfsProgramExplorerDialog(sourceDirPath)
                                     }
-                                    showVfsProgramExplorerDialog(sourceDirPath)
-                                }
-                                else -> {
-                                    if (selectedTreeItem.isExpanded) {
+                                    else -> {
                                         expandedPaths.remove(targetDir.path)
-                                    } else {
-                                        expandedPaths.add(targetDir.path)
+                                        showPicker()
                                     }
-                                    showPicker()
                                 }
                             }
-                        }
-                        .setNegativeButton("Back") { _, _ -> showPicker() }
-                        .show()
+                            .setNegativeButton("Back") { _, _ -> showPicker() }
+                            .show()
+                    }
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
