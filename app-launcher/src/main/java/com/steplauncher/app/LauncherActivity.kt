@@ -1080,16 +1080,27 @@ class LauncherActivity : AppCompatActivity() {
         refreshDocks()
     }
 
-    private data class VfsDisplayItem(
-        val label: String,
-        val isDir: Boolean,
-        val path: String,
-        val packageName: String? = null,
-        val iconSymbol: String = "📁",
-        val isParentLink: Boolean = false,
-        val hasAttention: Boolean = false,
-        val badgeText: String? = null
-    )
+    private fun openSystemAppInfoByPkg(pkgName: String) {
+        try {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", pkgName, null)
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Unable to open App Info for $pkgName", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun uninstallApplicationByPkg(pkgName: String) {
+        try {
+            val intent = Intent(Intent.ACTION_DELETE).apply {
+                data = Uri.fromParts("package", pkgName, null)
+            }
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Unable to launch uninstaller for $pkgName", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     private fun showVfsProgramExplorerDialog(dirPath: String = "/VFS") {
         val currentNode = com.steplauncher.core.vfs.VfsProgramManager.findNodeByPath(
@@ -1097,67 +1108,51 @@ class LauncherActivity : AppCompatActivity() {
         ) ?: com.steplauncher.core.vfs.VfsProgramManager.rootNode
 
         val pm = packageManager
-        val items = mutableListOf<VfsDisplayItem>()
+        val displayNodes = mutableListOf<com.steplauncher.core.vfs.VfsNode>()
 
         // Add parent directory link if not root
         if (currentNode.path != "/VFS" && currentNode.path.contains("/")) {
             val parentPath = currentNode.path.substringBeforeLast("/", "/VFS").ifEmpty { "/VFS" }
-            items.add(VfsDisplayItem(label = "⬆️ .. (Parent Directory)", isDir = true, path = parentPath, isParentLink = true))
-        }
-
-        // Add child subdirectories and application shortcuts
-        currentNode.children.forEach { child ->
-            val hasBadge = if (!child.isDirectory && !child.targetPackage.isNullOrEmpty()) {
-                DockManager.isTileAttentionRequested(child.targetPackage!!)
-            } else false
-
-            val badgeText = if (!child.isDirectory && !child.targetPackage.isNullOrEmpty()) {
-                DockManager.getTileBadgeText(child.targetPackage!!)
-            } else null
-
-            items.add(
-                VfsDisplayItem(
-                    label = if (child.isDirectory) "${child.iconSymbol} ${child.name}/" else "${child.iconSymbol} ${child.name}",
-                    isDir = child.isDirectory,
-                    path = child.path,
-                    packageName = child.targetPackage,
-                    iconSymbol = child.iconSymbol,
-                    hasAttention = hasBadge,
-                    badgeText = badgeText
+            displayNodes.add(
+                com.steplauncher.core.vfs.VfsNode(
+                    name = ".. (Parent)",
+                    path = parentPath,
+                    isDirectory = true,
+                    iconSymbol = "⬆️"
                 )
             )
         }
 
+        // Add child items (folders & app shortcuts)
+        displayNodes.addAll(currentNode.children)
+
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(30, 20, 30, 20)
+            setPadding(20, 20, 20, 20)
         }
 
         val tvHeader = TextView(this).apply {
             text = "📂 VFS Path: ${currentNode.path} (${currentNode.children.size} items)"
             textSize = 12f
-            setPadding(10, 0, 10, 20)
+            setPadding(10, 0, 10, 10)
         }
         layout.addView(tvHeader)
 
+        // Action Buttons Row
         val btnRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(0, 0, 0, 20)
+            setPadding(0, 0, 0, 10)
         }
 
         val btnNewFolder = Button(this).apply {
             text = "📁 + Folder"
             textSize = 11f
-            setOnClickListener {
-                showCreateVfsFolderDialog(currentNode.path)
-            }
+            setOnClickListener { showCreateVfsFolderDialog(currentNode.path) }
         }
         val btnAddApp = Button(this).apply {
             text = "📱 + Add App"
             textSize = 11f
-            setOnClickListener {
-                showAddAppToVfsDialog(currentNode.path)
-            }
+            setOnClickListener { showAddAppToVfsDialog(currentNode.path) }
         }
         val btnSync = Button(this).apply {
             text = "🔄 Auto-Sync"
@@ -1174,31 +1169,135 @@ class LauncherActivity : AppCompatActivity() {
         btnRow.addView(btnSync, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
         layout.addView(btnRow)
 
-        val displayStrings = items.map { item ->
-            val badgeStr = if (!item.badgeText.isNullOrEmpty()) " [🔴 ${item.badgeText}]" else if (item.hasAttention) " [🔴 ATTENTION]" else ""
-            "${item.label}$badgeStr"
-        }.toTypedArray()
+        // Scrollable GridView / RecyclerView (3 Columns)
+        val recyclerView = androidx.recyclerview.widget.RecyclerView(this).apply {
+            layoutManager = androidx.recyclerview.widget.GridLayoutManager(this@LauncherActivity, 3)
+            setPadding(4, 4, 4, 4)
+        }
 
-        MaterialAlertDialogBuilder(this)
-            .setTitle("💻 VFS Program Manager")
-            .setView(layout)
-            .setItems(displayStrings) { _, which ->
-                val selectedItem = items[which]
-                if (selectedItem.isParentLink || selectedItem.isDir) {
-                    showVfsProgramExplorerDialog(selectedItem.path)
-                } else if (!selectedItem.packageName.isNullOrEmpty()) {
-                    // Clear attention if active
-                    DockManager.clearAttention(selectedItem.packageName!!, this)
-                    val launchIntent = pm.getLaunchIntentForPackage(selectedItem.packageName!!)
+        recyclerView.adapter = VfsGridAdapter(
+            items = displayNodes,
+            onItemClick = { node ->
+                if (node.isDirectory) {
+                    showVfsProgramExplorerDialog(node.path)
+                } else if (!node.targetPackage.isNullOrEmpty()) {
+                    val pkg = node.targetPackage!!
+                    DockManager.clearAttention(pkg, this)
+                    val launchIntent = pm.getLaunchIntentForPackage(pkg)
                     if (launchIntent != null) {
                         try { startActivity(launchIntent) } catch (e: Exception) {}
-                        DockManager.launchAndAddToRunningStack(selectedItem.label, selectedItem.iconSymbol, selectedItem.packageName!!, launchIntent)
+                        DockManager.launchAndAddToRunningStack(node.name, node.iconSymbol, pkg, launchIntent)
                     } else {
-                        Toast.makeText(this, "Unable to launch ${selectedItem.label}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Unable to launch ${node.name}", Toast.LENGTH_SHORT).show()
                     }
                 }
+            },
+            onItemLongClick = { node, anchorView ->
+                if (!node.targetPackage.isNullOrEmpty()) {
+                    showVfsAppContextMenu(node, currentNode.path)
+                } else if (node.isDirectory && node.name != ".. (Parent)") {
+                    showVfsFolderContextMenu(node, currentNode.path)
+                }
             }
+        )
+
+        layout.addView(recyclerView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (340 * resources.displayMetrics.density).toInt()))
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("💻 VFS Program Explorer")
+            .setView(layout)
             .setPositiveButton("Close", null)
+            .show()
+    }
+
+    private fun showVfsAppContextMenu(node: com.steplauncher.core.vfs.VfsNode, currentDirPath: String) {
+        val pkg = node.targetPackage ?: return
+        val actions = mutableListOf(
+            "🚀 Launch Application",
+            "↔️ Move / Copy to Directory...",
+            "🗑️ Delete from this Directory",
+            "ℹ️ System App Info",
+            "📦 Uninstall Application"
+        )
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("📱 ${node.name}")
+            .setItems(actions.toTypedArray()) { _, which ->
+                when (actions[which]) {
+                    "🚀 Launch Application" -> {
+                        val launchIntent = packageManager.getLaunchIntentForPackage(pkg)
+                        if (launchIntent != null) {
+                            try { startActivity(launchIntent) } catch (e: Exception) {}
+                            DockManager.launchAndAddToRunningStack(node.name, node.iconSymbol, pkg, launchIntent)
+                        }
+                    }
+                    "↔️ Move / Copy to Directory..." -> showMoveOrCopyVfsNodeDialog(node, currentDirPath)
+                    "🗑️ Delete from this Directory" -> {
+                        com.steplauncher.core.vfs.VfsProgramManager.deleteNode(node.path, this)
+                        Toast.makeText(this, "Deleted ${node.name} from $currentDirPath", Toast.LENGTH_SHORT).show()
+                        showVfsProgramExplorerDialog(currentDirPath)
+                    }
+                    "ℹ️ System App Info" -> openSystemAppInfoByPkg(pkg)
+                    "📦 Uninstall Application" -> uninstallApplicationByPkg(pkg)
+                }
+            }
+            .show()
+    }
+
+    private fun showVfsFolderContextMenu(node: com.steplauncher.core.vfs.VfsNode, currentDirPath: String) {
+        val actions = arrayOf("📂 Open Folder", "🗑️ Delete Directory")
+        MaterialAlertDialogBuilder(this)
+            .setTitle("📁 ${node.name}")
+            .setItems(actions) { _, which ->
+                if (which == 0) {
+                    showVfsProgramExplorerDialog(node.path)
+                } else {
+                    com.steplauncher.core.vfs.VfsProgramManager.deleteNode(node.path, this)
+                    Toast.makeText(this, "Deleted directory ${node.name}", Toast.LENGTH_SHORT).show()
+                    showVfsProgramExplorerDialog(currentDirPath)
+                }
+            }
+            .show()
+    }
+
+    private fun showMoveOrCopyVfsNodeDialog(node: com.steplauncher.core.vfs.VfsNode, currentDirPath: String) {
+        val allDirs = mutableListOf<com.steplauncher.core.vfs.VfsNode>()
+        fun collectDirs(curr: com.steplauncher.core.vfs.VfsNode) {
+            if (curr.isDirectory) {
+                allDirs.add(curr)
+                curr.children.forEach { collectDirs(it) }
+            }
+        }
+        collectDirs(com.steplauncher.core.vfs.VfsProgramManager.rootNode)
+
+        val targetDirNames = allDirs.map { "📂 ${it.path}" }.toTypedArray()
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("↔️ Move or Copy ${node.name}")
+            .setItems(targetDirNames) { _, which ->
+                val targetDir = allDirs[which]
+                val options = arrayOf("↔️ Move (Remove from $currentDirPath)", "📋 Copy (Keep in $currentDirPath)")
+
+                MaterialAlertDialogBuilder(this)
+                    .setTitle("Select Action for ${node.name}")
+                    .setItems(options) { _, optIdx ->
+                        val isMove = optIdx == 0
+                        val added = com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
+                            targetDir.path, node.targetPackage!!, node.name, node.iconSymbol, this
+                        )
+                        if (added) {
+                            if (isMove) {
+                                com.steplauncher.core.vfs.VfsProgramManager.deleteNode(node.path, this)
+                                Toast.makeText(this, "Moved ${node.name} to ${targetDir.path}", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(this, "Copied ${node.name} to ${targetDir.path}", Toast.LENGTH_SHORT).show()
+                            }
+                            showVfsProgramExplorerDialog(targetDir.path)
+                        }
+                    }
+                    .show()
+            }
+            .setNegativeButton("Cancel", null)
             .show()
     }
 

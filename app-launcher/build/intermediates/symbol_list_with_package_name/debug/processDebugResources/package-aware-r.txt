@@ -3336,6 +3336,7 @@ id is_pooling_container_tag
 id italic
 id item_touch_helper_previous_elevation
 id iv_tile_app_icon
+id iv_vfs_icon
 id jumpToEnd
 id jumpToStart
 id labeled
@@ -3592,6 +3593,9 @@ id tv_tile_icon
 id tv_tile_subtitle
 id tv_tile_title
 id tv_tile_workspace_badge
+id tv_vfs_badge
+id tv_vfs_symbol
+id tv_vfs_title
 id unchecked
 id uniform
 id unlabeled
@@ -3755,6 +3759,7 @@ layout design_text_input_start_icon
 layout ime_base_split_test_activity
 layout ime_secondary_split_test_activity
 layout item_dock_tile
+layout item_vfs_grid
 layout m3_alert_dialog
 layout m3_alert_dialog_actions
 layout m3_alert_dialog_title
