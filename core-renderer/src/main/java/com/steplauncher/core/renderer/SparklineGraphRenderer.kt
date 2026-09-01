@@ -12,16 +12,23 @@ import android.graphics.Shader
 
 object SparklineGraphRenderer {
 
+    /**
+     * Subsamples telemetry history using bucket averaging (moving mean) to eliminate erratic point-sampling
+     * jitter and ensure smooth, consistent trend lines across hundreds of data points over time.
+     */
     private fun subsampleHistory(history: List<Int>, maxPoints: Int = 30): List<Int> {
         val list = synchronized(history) { history.toList() }
         if (list.isEmpty()) return emptyList()
         if (list.size <= maxPoints) return list
 
         val result = mutableListOf<Int>()
-        val step = list.size.toFloat() / maxPoints
+        val chunkSize = list.size.toFloat() / maxPoints
         for (i in 0 until maxPoints) {
-            val idx = (i * step).toInt().coerceIn(0, list.size - 1)
-            result.add(list[idx])
+            val startIdx = (i * chunkSize).toInt().coerceIn(0, list.size - 1)
+            val endIdx = ((i + 1) * chunkSize).toInt().coerceIn(startIdx + 1, list.size)
+            val subList = list.subList(startIdx, endIdx)
+            val avg = if (subList.isNotEmpty()) subList.average().toInt() else list[startIdx]
+            result.add(avg)
         }
         return result
     }

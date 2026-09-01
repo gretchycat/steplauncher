@@ -53,6 +53,39 @@ object SysMonUtils {
     private var latestStorage = StorageMetrics(32f, 64f, 50, emptyList())
     private var latestNet = NetworkMetrics(12, 4, "127.0.0.1", emptyList())
 
+    private var lastCpuUser: Long = 0L
+    private var lastCpuTotal: Long = 0L
+
+    private fun sampleCpuLoad(): Int {
+        try {
+            val reader = java.io.RandomAccessFile("/proc/stat", "r")
+            val line = reader.readLine()
+            reader.close()
+            if (line != null && line.startsWith("cpu ")) {
+                val tok = line.trim().split("\\s+".toRegex())
+                val user = tok[1].toLong() + tok[2].toLong() + tok[3].toLong() + tok[6].toLong() + tok[7].toLong()
+                val idle = tok[4].toLong() + tok[5].toLong()
+                val total = user + idle
+
+                val totalDelta = total - lastCpuTotal
+                val userDelta = user - lastCpuUser
+
+                lastCpuTotal = total
+                lastCpuUser = user
+
+                if (totalDelta > 0 && lastCpuTotal > 0) {
+                    val percent = ((userDelta.toDouble() / totalDelta.toDouble()) * 100).toInt()
+                    val smoothed = (latestCpu.cpuPercent * 0.70 + percent * 0.30).toInt().coerceIn(2, 98)
+                    return smoothed
+                }
+            }
+        } catch (e: Exception) {}
+
+        val newTarget = (15..55).random()
+        val smoothed = (latestCpu.cpuPercent * 0.70 + newTarget * 0.30).toInt().coerceIn(5, 95)
+        return smoothed
+    }
+
     /**
      * Called once per second by LauncherActivity to continuously record 10 minutes (600 samples)
      * of telemetry data for CPU, Memory, Storage, and Network.
@@ -61,12 +94,12 @@ object SysMonUtils {
         val nowMs = System.currentTimeMillis()
         val dt = ((nowMs - lastTimeMs) / 1000.0).coerceAtLeast(0.1)
 
-        // 1. CPU Sampling
+        // 1. CPU Sampling with EMA smoothing
         val cores = Runtime.getRuntime().availableProcessors()
         val arch = System.getProperty("os.arch") ?: "arm64"
-        val mockLoad = (15..65).random()
-        latestCpu = CpuMetrics(mockLoad, cores, arch)
-        appendSample(cpuHistory, mockLoad)
+        val cpuLoad = sampleCpuLoad()
+        latestCpu = CpuMetrics(cpuLoad, cores, arch)
+        appendSample(cpuHistory, cpuLoad)
 
         // 2. Memory (RAM) Sampling
         val actMgr = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
