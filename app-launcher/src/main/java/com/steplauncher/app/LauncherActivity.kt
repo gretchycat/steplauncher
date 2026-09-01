@@ -464,25 +464,25 @@ class LauncherActivity : AppCompatActivity() {
                     0 -> { // CPU Mode
                         val cpu = SysMonUtils.getCpuMetrics()
                         val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
-                            graphW, graphH, SysMonUtils.cpuHistory, "CPU Load History (10 Min)", "%",
+                            graphW, graphH, SysMonUtils.cpuHistory, "CPU Load History (60 Sec)", "%",
                             DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                         )
                         ivGraph.setImageBitmap(bmp)
-                        tvInfo.text = "💻 CPU Load: ${cpu.cpuPercent}%\n⚡ Cores: ${cpu.numCores} Active (${cpu.architecture})\n📈 Telemetry: ${SysMonUtils.cpuHistory.size} / 600 Samples"
+                        tvInfo.text = "💻 CPU Load: ${cpu.cpuPercent}%\n⚡ Cores: ${cpu.numCores} Active (${cpu.architecture})\n📈 Telemetry: ${SysMonUtils.cpuHistory.size} / ${SysMonUtils.MAX_SAMPLES} Samples"
                     }
                     1 -> { // Memory Mode
                         val mem = SysMonUtils.getMemoryMetrics(this@LauncherActivity)
                         val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
-                            graphW, graphH, SysMonUtils.memoryHistory, "RAM Usage History (10 Min)", "%",
+                            graphW, graphH, SysMonUtils.memoryHistory, "RAM Usage History (60 Sec)", "%",
                             DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                         )
                         ivGraph.setImageBitmap(bmp)
-                        tvInfo.text = "📊 RAM Utilization: ${mem.ramUsagePercent}%\n💾 Allocated: ${mem.usedRamMb} MB / ${mem.totalRamMb} MB\n📈 Telemetry: ${SysMonUtils.memoryHistory.size} / 600 Samples"
+                        tvInfo.text = "📊 RAM Utilization: ${mem.ramUsagePercent}%\n💾 Allocated: ${mem.usedRamMb} MB / ${mem.totalRamMb} MB\n📈 Telemetry: ${SysMonUtils.memoryHistory.size} / ${SysMonUtils.MAX_SAMPLES} Samples"
                     }
                     2 -> { // Storage Mode
                         val storage = SysMonUtils.getStorageMetrics(this@LauncherActivity)
                         val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
-                            graphW, graphH, SysMonUtils.storageHistory, "Disk Capacity History (10 Min)", "%",
+                            graphW, graphH, SysMonUtils.storageHistory, "Disk Capacity History (60 Sec)", "%",
                             DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                         )
                         ivGraph.setImageBitmap(bmp)
@@ -499,7 +499,7 @@ class LauncherActivity : AppCompatActivity() {
                     3 -> { // Network Mode
                         val net = SysMonUtils.getNetworkMetrics(this@LauncherActivity)
                         val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawDetailedTelemetryGraphWithAxes(
-                            graphW, graphH, SysMonUtils.rxHistory, "Network Downstream (10 Min)", "KB/s",
+                            graphW, graphH, SysMonUtils.rxHistory, "Network Downstream (60 Sec)", "KB/s",
                             DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                         )
                         ivGraph.setImageBitmap(bmp)

@@ -94,13 +94,13 @@ object SparklineGraphRenderer {
             canvas.drawText("$lvl$yUnit", marginLeft - 10f, y + 5f, axisLabelPaint)
         }
 
-        // X-Axis Time Labels (-10m, -7.5m, -5m, -2.5m, NOW)
+        // X-Axis Time Labels (-60s, -45s, -30s, -15s, NOW)
         val xLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#B0FFFFFF")
             textSize = 15f
             textAlign = Paint.Align.CENTER
         }
-        val xLabels = arrayOf("-10m", "-7.5m", "-5m", "-2.5m", "NOW")
+        val xLabels = arrayOf("-60s", "-45s", "-30s", "-15s", "NOW")
         xLabels.forEachIndexed { idx, label ->
             val ratio = idx / (xLabels.size - 1).toFloat()
             val x = marginLeft + graphW * ratio
