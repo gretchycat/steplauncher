@@ -1314,9 +1314,20 @@ class LauncherActivity : AppCompatActivity() {
             }
         }
 
+        val btnEditThisDir = if (currentNode.path != "/VFS") {
+            Button(this).apply {
+                text = "✏️ Edit"
+                textSize = 11f
+                setOnClickListener { showEditVfsNodeDialog(currentNode, currentNode.path) }
+            }
+        } else null
+
         btnRow.addView(btnNewFolder, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
         btnRow.addView(btnAddApp, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
         btnRow.addView(btnSync, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
+        if (btnEditThisDir != null) {
+            btnRow.addView(btnEditThisDir, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
+        }
         btnRow.addView(btnMultiSelect, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
         layout.addView(btnRow)
         layout.addView(batchRow)
@@ -1395,10 +1406,51 @@ class LauncherActivity : AppCompatActivity() {
             .show()
     }
 
+    private fun showEditVfsNodeDialog(node: com.steplauncher.core.vfs.VfsNode, currentDirPath: String) {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 20, 40, 20)
+        }
+
+        val etName = EditText(this).apply {
+            hint = if (node.isDirectory) "Directory Name" else "Shortcut Label"
+            setText(node.name)
+        }
+
+        val etIcon = EditText(this).apply {
+            hint = "Emoji / Icon Symbol"
+            setText(node.iconSymbol)
+        }
+
+        layout.addView(etName)
+        layout.addView(etIcon)
+
+        val itemType = if (node.isDirectory) "Directory" else "App Shortcut"
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("✏️ Edit $itemType Details")
+            .setView(layout)
+            .setPositiveButton("Save") { _, _ ->
+                val newName = etName.text.toString().trim()
+                val newIcon = etIcon.text.toString().trim()
+                if (newName.isNotEmpty()) {
+                    val updatedPath = com.steplauncher.core.vfs.VfsProgramManager.editNode(
+                        node.path, newName, newIcon, this@LauncherActivity
+                    )
+                    Toast.makeText(this@LauncherActivity, "Updated details for $newName", Toast.LENGTH_SHORT).show()
+                    val refreshPath = if (currentDirPath == node.path) updatedPath else currentDirPath
+                    showVfsProgramExplorerDialog(refreshPath)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     private fun showVfsAppContextMenu(node: com.steplauncher.core.vfs.VfsNode, currentDirPath: String) {
         val pkg = node.targetPackage ?: return
         val actions = mutableListOf(
             "🚀 Launch Application",
+            "✏️ Edit Name & Icon",
             "↔️ Move / Copy to Directory...",
             "🗑️ Delete from this Directory",
             "ℹ️ System App Info",
@@ -1408,7 +1460,7 @@ class LauncherActivity : AppCompatActivity() {
         val formattedCurrent = com.steplauncher.core.vfs.VfsProgramManager.formatVfsPath(currentDirPath)
 
         MaterialAlertDialogBuilder(this)
-            .setTitle("📱 ${node.name}")
+            .setTitle("${node.iconSymbol} ${node.name}")
             .setItems(actions.toTypedArray()) { _, which ->
                 when (actions[which]) {
                     "🚀 Launch Application" -> {
@@ -1418,6 +1470,7 @@ class LauncherActivity : AppCompatActivity() {
                             DockManager.launchAndAddToRunningStack(node.name, node.iconSymbol, pkg, launchIntent)
                         }
                     }
+                    "✏️ Edit Name & Icon" -> showEditVfsNodeDialog(node, currentDirPath)
                     "↔️ Move / Copy to Directory..." -> showCollapsibleVfsDirectoryPicker(nodeToMove = node, sourceDirPath = currentDirPath)
                     "🗑️ Delete from this Directory" -> {
                         com.steplauncher.core.vfs.VfsProgramManager.removeAppFromDirectory(currentDirPath, pkg, this)
@@ -1432,14 +1485,15 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     private fun showVfsFolderContextMenu(node: com.steplauncher.core.vfs.VfsNode, currentDirPath: String) {
-        val actions = arrayOf("📂 Open Folder", "↔️ Move Directory...", "🗑️ Delete Directory")
+        val actions = arrayOf("📂 Open Folder", "✏️ Edit Directory Name & Icon", "↔️ Move Directory...", "🗑️ Delete Directory")
         MaterialAlertDialogBuilder(this)
-            .setTitle("📁 ${node.name}")
+            .setTitle("${node.iconSymbol} ${node.name}")
             .setItems(actions) { _, which ->
                 when (which) {
                     0 -> showVfsProgramExplorerDialog(node.path)
-                    1 -> showCollapsibleVfsDirectoryPicker(nodeToMove = node, sourceDirPath = currentDirPath)
-                    2 -> {
+                    1 -> showEditVfsNodeDialog(node, currentDirPath)
+                    2 -> showCollapsibleVfsDirectoryPicker(nodeToMove = node, sourceDirPath = currentDirPath)
+                    3 -> {
                         com.steplauncher.core.vfs.VfsProgramManager.deleteNode(node.path, this)
                         Toast.makeText(this, "Deleted directory ${node.name}", Toast.LENGTH_SHORT).show()
                         showVfsProgramExplorerDialog(currentDirPath)

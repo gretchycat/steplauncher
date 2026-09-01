@@ -267,6 +267,40 @@ object VfsProgramManager {
         return deleted
     }
 
+    /**
+     * Edits a node's name and icon symbol in-place.
+     * For directories, recursively updates child paths to match the updated directory path.
+     * Returns the updated node path.
+     */
+    fun editNode(targetPath: String, newName: String, newIconSymbol: String, context: Context): String {
+        val node = findNodeByPath(rootNode, targetPath) ?: return targetPath
+
+        node.name = newName
+        if (newIconSymbol.isNotEmpty()) {
+            node.iconSymbol = newIconSymbol
+        }
+
+        if (node.path != "/VFS") {
+            val parentPath = node.path.substringBeforeLast("/", "/VFS").ifEmpty { "/VFS" }
+            val newPath = if (parentPath == "/VFS") "/VFS/$newName" else "$parentPath/$newName"
+
+            if (node.path != newPath) {
+                fun updateChildPaths(currNode: VfsNode, currParentPath: String) {
+                    currNode.path = if (currParentPath == "/VFS") "/VFS/${currNode.name}" else "$currParentPath/${currNode.name}"
+                    if (currNode.isDirectory) {
+                        currNode.children.forEach { child ->
+                            updateChildPaths(child, currNode.path)
+                        }
+                    }
+                }
+                updateChildPaths(node, parentPath)
+            }
+        }
+
+        saveState(context)
+        return node.path
+    }
+
     private fun deleteNodeRecursive(current: VfsNode, targetPath: String): Boolean {
         val iterator = current.children.iterator()
         while (iterator.hasNext()) {
