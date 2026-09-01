@@ -1233,7 +1233,7 @@ class LauncherActivity : AppCompatActivity() {
                     }
                     "↔️ Move / Copy to Directory..." -> showMoveOrCopyVfsNodeDialog(node, currentDirPath)
                     "🗑️ Delete from this Directory" -> {
-                        com.steplauncher.core.vfs.VfsProgramManager.deleteNode(node.path, this)
+                        com.steplauncher.core.vfs.VfsProgramManager.removeAppFromDirectory(currentDirPath, pkg, this)
                         Toast.makeText(this, "Deleted ${node.name} from $currentDirPath", Toast.LENGTH_SHORT).show()
                         showVfsProgramExplorerDialog(currentDirPath)
                     }
@@ -1282,18 +1282,22 @@ class LauncherActivity : AppCompatActivity() {
                     .setTitle("Select Action for ${node.name}")
                     .setItems(options) { _, optIdx ->
                         val isMove = optIdx == 0
-                        val added = com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
-                            targetDir.path, node.targetPackage!!, node.name, node.iconSymbol, this
-                        )
-                        if (added) {
-                            if (isMove) {
-                                com.steplauncher.core.vfs.VfsProgramManager.deleteNode(node.path, this)
+                        if (isMove) {
+                            val moved = com.steplauncher.core.vfs.VfsProgramManager.moveAppShortcut(
+                                currentDirPath, targetDir.path, node.targetPackage!!, node.name, node.iconSymbol, this
+                            )
+                            if (moved) {
                                 Toast.makeText(this, "Moved ${node.name} to ${targetDir.path}", Toast.LENGTH_SHORT).show()
-                            } else {
+                            }
+                        } else {
+                            val copied = com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
+                                targetDir.path, node.targetPackage!!, node.name, node.iconSymbol, this
+                            )
+                            if (copied) {
                                 Toast.makeText(this, "Copied ${node.name} to ${targetDir.path}", Toast.LENGTH_SHORT).show()
                             }
-                            showVfsProgramExplorerDialog(targetDir.path)
                         }
+                        showVfsProgramExplorerDialog(targetDir.path)
                     }
                     .show()
             }

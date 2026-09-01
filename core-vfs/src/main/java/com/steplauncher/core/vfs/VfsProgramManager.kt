@@ -183,6 +183,31 @@ object VfsProgramManager {
     }
 
     /**
+     * Removes an application shortcut specifically from a given directory path.
+     */
+    fun removeAppFromDirectory(dirPath: String, packageName: String, context: Context): Boolean {
+        val dir = findNodeByPath(rootNode, dirPath) ?: return false
+        if (!dir.isDirectory) return false
+
+        val removed = dir.children.removeAll { !it.isDirectory && it.targetPackage == packageName }
+        if (removed) {
+            saveState(context)
+        }
+        return removed
+    }
+
+    /**
+     * Moves an application shortcut from a source directory to a target directory.
+     */
+    fun moveAppShortcut(sourceDirPath: String, targetDirPath: String, packageName: String, label: String, iconSymbol: String, context: Context): Boolean {
+        if (sourceDirPath == targetDirPath) return true
+        removeAppFromDirectory(sourceDirPath, packageName, context)
+        val added = addAppToDirectory(targetDirPath, packageName, label, iconSymbol, context)
+        saveState(context)
+        return added
+    }
+
+    /**
      * Recursively deletes a node by path.
      */
     fun deleteNode(targetPath: String, context: Context): Boolean {
