@@ -17,8 +17,8 @@ import com.steplauncher.core.renderer.ForgivingTouchHelper
 import com.steplauncher.core.vfs.VfsNode
 
 /**
- * RecyclerView Adapter for displaying VFS Program Manager items in a scrollable grid with native vector drawables and real application icons.
- * Supports multi-selection for batch operations (move, copy, delete) with in-place position updates and custom image URIs.
+ * RecyclerView Adapter for displaying VFS Program Manager items in a scrollable grid with real application icons.
+ * Application shortcuts always use the application's native built-in icon unless a custom image URI is set.
  */
 class VfsGridAdapter(
     private val items: List<VfsNode>,
@@ -48,58 +48,74 @@ class VfsGridAdapter(
 
         holder.tvTitle.text = item.name
 
-        val customIconUri = item.iconSymbol
-        var isCustomImage = false
+        val pkg = item.targetPackage
+        var isIconRendered = false
 
-        if (customIconUri.startsWith("content://") || customIconUri.startsWith("file://") || customIconUri.startsWith("/")) {
-            try {
-                val uri = Uri.parse(customIconUri)
-                val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
-                } else {
-                    @Suppress("DEPRECATION")
-                    MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-                }
-                holder.ivIcon.setImageBitmap(bitmap)
-                holder.ivIcon.visibility = View.VISIBLE
-                holder.tvSymbol.visibility = View.GONE
-                isCustomImage = true
-            } catch (e: Exception) {
-                isCustomImage = false
-            }
-        }
-
-        if (!isCustomImage) {
-            val resId = context.resources.getIdentifier(customIconUri, "drawable", context.packageName)
-            if (resId != 0) {
-                holder.ivIcon.setImageResource(resId)
-                holder.ivIcon.visibility = View.VISIBLE
-                holder.tvSymbol.visibility = View.GONE
-            } else {
-                var appDrawable: Drawable? = null
-                if (!item.isDirectory && !item.targetPackage.isNullOrEmpty()) {
-                    try {
-                        appDrawable = pm.getApplicationIcon(item.targetPackage!!)
-                    } catch (e: Exception) {
-                        appDrawable = null
+        // 1. Application Shortcuts: ALWAYS use built-in application icon (or custom image URI)
+        if (!item.isDirectory && !pkg.isNullOrEmpty()) {
+            val customIconUri = item.iconSymbol
+            if (customIconUri.startsWith("content://") || customIconUri.startsWith("file://") || customIconUri.startsWith("/")) {
+                try {
+                    val uri = Uri.parse(customIconUri)
+                    val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
                     }
+                    holder.ivIcon.setImageBitmap(bitmap)
+                    holder.ivIcon.visibility = View.VISIBLE
+                    holder.tvSymbol.visibility = View.GONE
+                    isIconRendered = true
+                } catch (e: Exception) {
+                    isIconRendered = false
                 }
+            }
 
-                if (appDrawable != null) {
+            if (!isIconRendered) {
+                try {
+                    val appDrawable = pm.getApplicationIcon(pkg)
                     holder.ivIcon.setImageDrawable(appDrawable)
                     holder.ivIcon.visibility = View.VISIBLE
                     holder.tvSymbol.visibility = View.GONE
-                } else {
+                    isIconRendered = true
+                } catch (e: Exception) {
+                    isIconRendered = false
+                }
+            }
+        }
+
+        // 2. Directories or Category Links: Use assigned category vector drawable or custom image URI
+        if (!isIconRendered) {
+            val customIconUri = item.iconSymbol
+            if (customIconUri.startsWith("content://") || customIconUri.startsWith("file://") || customIconUri.startsWith("/")) {
+                try {
+                    val uri = Uri.parse(customIconUri)
+                    val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
+                    }
+                    holder.ivIcon.setImageBitmap(bitmap)
+                    holder.ivIcon.visibility = View.VISIBLE
+                    holder.tvSymbol.visibility = View.GONE
+                } catch (e: Exception) {
                     val fallbackRes = if (item.isDirectory) R.drawable.ic_cat_folder else R.drawable.ic_cat_app
                     holder.ivIcon.setImageResource(fallbackRes)
                     holder.ivIcon.visibility = View.VISIBLE
                     holder.tvSymbol.visibility = View.GONE
                 }
+            } else {
+                val resId = context.resources.getIdentifier(customIconUri, "drawable", context.packageName)
+                val iconRes = if (resId != 0) resId else (if (item.isDirectory) R.drawable.ic_cat_folder else R.drawable.ic_cat_app)
+                holder.ivIcon.setImageResource(iconRes)
+                holder.ivIcon.visibility = View.VISIBLE
+                holder.tvSymbol.visibility = View.GONE
             }
         }
 
         // Multi-Select Checkbox State
-        val pkg = item.targetPackage
         if (isMultiSelectMode && !item.isDirectory && !pkg.isNullOrEmpty()) {
             holder.tvCheck.visibility = View.VISIBLE
             holder.tvCheck.text = if (selectedPackages.contains(pkg)) "☑️" else "☐"

@@ -107,23 +107,23 @@ class DockTileAdapter(
         }
 
         if (!isCustomImage) {
-            val resId = context.resources.getIdentifier(customIconUri, "drawable", context.packageName)
-            if (resId != 0) {
-                holder.ivAppIcon.setImageResource(resId)
+            var appDrawable: Drawable? = null
+            if (pkgName != null && pkgName.contains(".")) {
+                try {
+                    appDrawable = holder.itemView.context.packageManager.getApplicationIcon(pkgName)
+                } catch (e: Exception) {
+                    appDrawable = null
+                }
+            }
+
+            if (appDrawable != null) {
+                holder.ivAppIcon.setImageDrawable(appDrawable)
                 holder.ivAppIcon.visibility = View.VISIBLE
                 holder.tvIcon.visibility = View.GONE
             } else {
-                var appDrawable: Drawable? = null
-                if (pkgName != null && pkgName.contains(".")) {
-                    try {
-                        appDrawable = holder.itemView.context.packageManager.getApplicationIcon(pkgName)
-                    } catch (e: Exception) {
-                        appDrawable = null
-                    }
-                }
-
-                if (appDrawable != null) {
-                    holder.ivAppIcon.setImageDrawable(appDrawable)
+                val resId = holder.itemView.context.resources.getIdentifier(customIconUri, "drawable", holder.itemView.context.packageName)
+                if (resId != 0) {
+                    holder.ivAppIcon.setImageResource(resId)
                     holder.ivAppIcon.visibility = View.VISIBLE
                     holder.tvIcon.visibility = View.GONE
                 } else if (tile is DockTile.DockAnchor && (tile.iconSymbol == "📎" || tile.iconSymbol.equals("paperclip", ignoreCase = true) || tile.iconSymbol.isEmpty())) {
