@@ -1417,35 +1417,38 @@ class LauncherActivity : AppCompatActivity() {
             return result
         }
 
-        fun showPicker() {
-            val mainLayout = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(20, 20, 20, 20)
-            }
+        val mainLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(20, 20, 20, 20)
+        }
 
-            val cbMoveMode = android.widget.CheckBox(this).apply {
-                text = "☑️ Move mode (uncheck for Copy)"
-                isChecked = true
-                textSize = 14f
-                setPadding(10, 10, 10, 20)
-            }
-            mainLayout.addView(cbMoveMode)
+        val cbMoveMode = android.widget.CheckBox(this).apply {
+            text = "☑️ Move mode (uncheck for Copy)"
+            isChecked = true
+            textSize = 14f
+            setPadding(10, 10, 10, 20)
+        }
+        mainLayout.addView(cbMoveMode)
+
+        val scrollView = android.widget.ScrollView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                (300 * resources.displayMetrics.density).toInt()
+            )
+        }
+
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(10, 10, 10, 10)
+        }
+        scrollView.addView(container)
+        mainLayout.addView(scrollView)
+
+        fun rebuildTreeRows() {
+            val currentScrollY = scrollView.scrollY
+            container.removeAllViews()
 
             val visibleNodes = buildVisibleList()
-            val scrollView = android.widget.ScrollView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    (300 * resources.displayMetrics.density).toInt()
-                )
-            }
-
-            val container = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(10, 10, 10, 10)
-            }
-            scrollView.addView(container)
-
-            val rowViews = mutableListOf<TextView>()
 
             visibleNodes.forEach { treeItem ->
                 val targetDir = treeItem.node
@@ -1453,106 +1456,118 @@ class LauncherActivity : AppCompatActivity() {
                 val indent = "    ".repeat(treeItem.depth)
                 val arrow = if (hasSubDirs) (if (treeItem.isExpanded) "▼ " else "▶ ") else "  "
                 val displayLabel = if (targetDir.path == "/VFS") "Root" else targetDir.name
+                val isSelected = (selectedTargetDir?.path == targetDir.path)
 
-                val tvRow = TextView(this).apply {
+                val tvRow = TextView(this@LauncherActivity).apply {
                     text = "$indent$arrow${targetDir.iconSymbol} $displayLabel"
                     textSize = 14f
                     setTextColor(Color.WHITE)
                     setPadding(20, 16, 20, 16)
+                    if (isSelected) {
+                        setBackgroundColor(Color.argb(120, 0, 229, 255))
+                    } else {
+                        setBackgroundColor(Color.TRANSPARENT)
+                    }
+
                     setOnClickListener {
-                        if (hasSubDirs && !treeItem.isExpanded) {
-                            expandedPaths.add(targetDir.path)
-                            showPicker()
+                        if (hasSubDirs) {
+                            if (treeItem.isExpanded) {
+                                expandedPaths.remove(targetDir.path)
+                            } else {
+                                expandedPaths.add(targetDir.path)
+                            }
+                            selectedTargetDir = targetDir
+                            rebuildTreeRows()
                         } else {
                             selectedTargetDir = targetDir
-                            rowViews.forEach { it.setBackgroundColor(Color.TRANSPARENT) }
-                            setBackgroundColor(Color.argb(120, 0, 229, 255))
+                            rebuildTreeRows()
                         }
                     }
                 }
-                rowViews.add(tvRow)
                 container.addView(tvRow)
             }
 
-            mainLayout.addView(scrollView)
-
-            val titleTarget = when {
-                nodeToMove != null -> nodeToMove.name
-                pkgsToMove != null -> "${pkgsToMove.size} Apps"
-                else -> "Selection"
+            scrollView.post {
+                scrollView.scrollTo(0, currentScrollY)
             }
-
-            MaterialAlertDialogBuilder(this)
-                .setTitle("📂 Choose Target Directory ($titleTarget)")
-                .setView(mainLayout)
-                .setPositiveButton("OK") { _, _ ->
-                    val targetDir = selectedTargetDir
-                    if (targetDir == null) {
-                        Toast.makeText(this@LauncherActivity, "Please tap a target directory from the list", Toast.LENGTH_SHORT).show()
-                        return@setPositiveButton
-                    }
-
-                    val isMove = cbMoveMode.isChecked
-                    val targetFormatted = com.steplauncher.core.vfs.VfsProgramManager.formatVfsPath(targetDir.path)
-
-                    if (nodeToMove != null) {
-                        if (nodeToMove.isDirectory) {
-                            if (!com.steplauncher.core.vfs.VfsProgramManager.isMoveValid(nodeToMove.path, targetDir.path)) {
-                                Toast.makeText(this@LauncherActivity, "⚠️ Cannot move folder into itself or its subfolder!", Toast.LENGTH_SHORT).show()
-                            } else {
-                                val moved = com.steplauncher.core.vfs.VfsProgramManager.moveDirectory(
-                                    nodeToMove.path, targetDir.path, this@LauncherActivity
-                                )
-                                if (moved) {
-                                    Toast.makeText(this@LauncherActivity, "Moved folder ${nodeToMove.name} to $targetFormatted", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        } else {
-                            if (isMove) {
-                                val moved = com.steplauncher.core.vfs.VfsProgramManager.moveAppShortcut(
-                                    sourceDirPath, targetDir.path, nodeToMove.targetPackage!!, nodeToMove.name, nodeToMove.iconSymbol, this@LauncherActivity
-                                )
-                                if (moved) {
-                                    Toast.makeText(this@LauncherActivity, "Moved ${nodeToMove.name} to $targetFormatted", Toast.LENGTH_SHORT).show()
-                                }
-                            } else {
-                                val copied = com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
-                                    targetDir.path, nodeToMove.targetPackage!!, nodeToMove.name, nodeToMove.iconSymbol, this@LauncherActivity
-                                )
-                                if (copied) {
-                                    Toast.makeText(this@LauncherActivity, "Copied ${nodeToMove.name} to $targetFormatted", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
-                    } else if (!pkgsToMove.isNullOrEmpty()) {
-                        pkgsToMove.forEach { pkg ->
-                            val matchedNode = availableNodes.find { !it.isDirectory && it.targetPackage == pkg }
-                            val label = matchedNode?.name ?: pkg
-                            val symbol = matchedNode?.iconSymbol ?: "📱"
-
-                            if (isMove) {
-                                com.steplauncher.core.vfs.VfsProgramManager.moveAppShortcut(
-                                    sourceDirPath, targetDir.path, pkg, label, symbol, this@LauncherActivity
-                                )
-                            } else {
-                                com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
-                                    targetDir.path, pkg, label, symbol, this@LauncherActivity
-                                )
-                            }
-                        }
-                        val actVerb = if (isMove) "Moved" else "Copied"
-                        Toast.makeText(this@LauncherActivity, "$actVerb ${pkgsToMove.size} apps to $targetFormatted", Toast.LENGTH_SHORT).show()
-
-                        selectedVfsPackages.clear()
-                        isVfsMultiSelectMode = false
-                    }
-                    showVfsProgramExplorerDialog(sourceDirPath)
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
         }
 
-        showPicker()
+        rebuildTreeRows()
+
+        val titleTarget = when {
+            nodeToMove != null -> nodeToMove.name
+            pkgsToMove != null -> "${pkgsToMove.size} Apps"
+            else -> "Selection"
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("📂 Choose Target Directory ($titleTarget)")
+            .setView(mainLayout)
+            .setPositiveButton("OK") { _, _ ->
+                val targetDir = selectedTargetDir
+                if (targetDir == null) {
+                    Toast.makeText(this@LauncherActivity, "Please tap a target directory from the list", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                val isMove = cbMoveMode.isChecked
+                val targetFormatted = com.steplauncher.core.vfs.VfsProgramManager.formatVfsPath(targetDir.path)
+
+                if (nodeToMove != null) {
+                    if (nodeToMove.isDirectory) {
+                        if (!com.steplauncher.core.vfs.VfsProgramManager.isMoveValid(nodeToMove.path, targetDir.path)) {
+                            Toast.makeText(this@LauncherActivity, "⚠️ Cannot move folder into itself or its subfolder!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val moved = com.steplauncher.core.vfs.VfsProgramManager.moveDirectory(
+                                nodeToMove.path, targetDir.path, this@LauncherActivity
+                            )
+                            if (moved) {
+                                Toast.makeText(this@LauncherActivity, "Moved folder ${nodeToMove.name} to $targetFormatted", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } else {
+                        if (isMove) {
+                            val moved = com.steplauncher.core.vfs.VfsProgramManager.moveAppShortcut(
+                                sourceDirPath, targetDir.path, nodeToMove.targetPackage!!, nodeToMove.name, nodeToMove.iconSymbol, this@LauncherActivity
+                            )
+                            if (moved) {
+                                Toast.makeText(this@LauncherActivity, "Moved ${nodeToMove.name} to $targetFormatted", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            val copied = com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
+                                targetDir.path, nodeToMove.targetPackage!!, nodeToMove.name, nodeToMove.iconSymbol, this@LauncherActivity
+                            )
+                            if (copied) {
+                                Toast.makeText(this@LauncherActivity, "Copied ${nodeToMove.name} to $targetFormatted", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                } else if (!pkgsToMove.isNullOrEmpty()) {
+                    pkgsToMove.forEach { pkg ->
+                        val matchedNode = availableNodes.find { !it.isDirectory && it.targetPackage == pkg }
+                        val label = matchedNode?.name ?: pkg
+                        val symbol = matchedNode?.iconSymbol ?: "📱"
+
+                        if (isMove) {
+                            com.steplauncher.core.vfs.VfsProgramManager.moveAppShortcut(
+                                sourceDirPath, targetDir.path, pkg, label, symbol, this@LauncherActivity
+                            )
+                        } else {
+                            com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(
+                                targetDir.path, pkg, label, symbol, this@LauncherActivity
+                            )
+                        }
+                    }
+                    val actVerb = if (isMove) "Moved" else "Copied"
+                    Toast.makeText(this@LauncherActivity, "$actVerb ${pkgsToMove.size} apps to $targetFormatted", Toast.LENGTH_SHORT).show()
+
+                    selectedVfsPackages.clear()
+                    isVfsMultiSelectMode = false
+                }
+                showVfsProgramExplorerDialog(sourceDirPath)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun showCreateVfsFolderDialog(parentPath: String) {
