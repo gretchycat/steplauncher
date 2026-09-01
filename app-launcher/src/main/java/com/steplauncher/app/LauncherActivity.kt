@@ -186,29 +186,59 @@ class LauncherActivity : AppCompatActivity() {
         }
     }
 
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (::scaleGestureDetector.isInitialized) {
+            scaleGestureDetector.onTouchEvent(ev)
+        }
+        if (::scaleGestureDetector.isInitialized && scaleGestureDetector.isInProgress) {
+            return true
+        }
+        if (::gestureDetector.isInitialized) {
+            gestureDetector.onTouchEvent(ev)
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
     private fun setupGestureDetectors() {
         scaleGestureDetector = ScaleGestureDetector(this, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
             override fun onScale(detector: ScaleGestureDetector): Boolean {
                 if (!DockManager.isLayoutLocked) {
-                    DockManager.scaleIconSize(detector.scaleFactor, this@LauncherActivity)
-                    return true
+                    val scaleFactor = detector.scaleFactor
+                    if (Math.abs(scaleFactor - 1.0f) > 0.015f) {
+                        DockManager.scaleIconSize(scaleFactor, this@LauncherActivity)
+                        return true
+                    }
                 }
                 return false
             }
         })
 
         gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent): Boolean {
+                return true
+            }
+
             override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
                 if (e1 == null) return false
                 val diffX = e2.x - e1.x
                 val diffY = e2.y - e1.y
-                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 120 && Math.abs(velocityX) > 200) {
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 80 && Math.abs(velocityX) > 150) {
                     if (diffX < 0) {
+                        // Swipe Left -> Next Workspace
                         DockManager.nextWorkspace(this@LauncherActivity)
-                        Toast.makeText(this@LauncherActivity, "❖ Workspace ${DockManager.currentWorkspaceIndex + 1} of ${DockManager.totalWorkspaces}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this@LauncherActivity,
+                            "❖ Workspace ${DockManager.currentWorkspaceIndex + 1} of ${DockManager.totalWorkspaces}",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } else {
+                        // Swipe Right -> Previous Workspace
                         DockManager.prevWorkspace(this@LauncherActivity)
-                        Toast.makeText(this@LauncherActivity, "❖ Workspace ${DockManager.currentWorkspaceIndex + 1} of ${DockManager.totalWorkspaces}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this@LauncherActivity,
+                            "❖ Workspace ${DockManager.currentWorkspaceIndex + 1} of ${DockManager.totalWorkspaces}",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                     return true
                 }

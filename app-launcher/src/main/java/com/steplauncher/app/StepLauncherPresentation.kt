@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.Display
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -26,6 +27,9 @@ class StepLauncherPresentation(
     private lateinit var binding: ActivityLauncherBinding
     val displayIdInt: Int = display.displayId
     private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
+    private lateinit var scaleGestureDetector: ScaleGestureDetector
+    private lateinit var gestureDetector: GestureDetector
 
     private val dockChangeListener: () -> Unit = {
         mainHandler.post {
@@ -49,6 +53,19 @@ class StepLauncherPresentation(
         DockManager.removeChangeListener(dockChangeListener)
     }
 
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (::scaleGestureDetector.isInitialized) {
+            scaleGestureDetector.onTouchEvent(ev)
+        }
+        if (::scaleGestureDetector.isInitialized && scaleGestureDetector.isInProgress) {
+            return true
+        }
+        if (::gestureDetector.isInitialized) {
+            gestureDetector.onTouchEvent(ev)
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
     private fun setupRecyclerViews() {
         val isPortrait = context.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
         binding.rvDockBottomLeft.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, true).apply {
@@ -59,12 +76,29 @@ class StepLauncherPresentation(
     }
 
     private fun setupGestureDetectors() {
-        val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+        scaleGestureDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                if (!DockManager.isLayoutLocked) {
+                    val scaleFactor = detector.scaleFactor
+                    if (Math.abs(scaleFactor - 1.0f) > 0.015f) {
+                        DockManager.scaleIconSize(scaleFactor, context)
+                        return true
+                    }
+                }
+                return false
+            }
+        })
+
+        gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent): Boolean {
+                return true
+            }
+
             override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
                 if (e1 == null) return false
                 val diffX = e2.x - e1.x
                 val diffY = e2.y - e1.y
-                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 120 && Math.abs(velocityX) > 200) {
+                if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 80 && Math.abs(velocityX) > 150) {
                     if (diffX < 0) {
                         DockManager.nextWorkspaceForDisplay(displayIdInt, context)
                         val currWs = DockManager.getWorkspaceIndexForDisplay(displayIdInt) + 1
@@ -79,10 +113,6 @@ class StepLauncherPresentation(
                 return false
             }
         })
-
-        binding.root.setOnTouchListener { _, event ->
-            gestureDetector.onTouchEvent(event)
-        }
     }
 
     fun refreshDocks() {
