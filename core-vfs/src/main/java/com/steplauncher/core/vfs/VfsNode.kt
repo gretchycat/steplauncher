@@ -6,7 +6,7 @@ package com.steplauncher.core.vfs
  */
 data class VfsNode(
     val name: String,
-    val path: String,
+    var path: String,
     val isDirectory: Boolean,
     val category: VfsCategory? = null,
     val targetPackage: String? = null,

@@ -183,6 +183,55 @@ object VfsProgramManager {
     }
 
     /**
+     * Formats a VFS path by removing the /VFS prefix for user display.
+     */
+    fun formatVfsPath(path: String): String {
+        return when {
+            path == "/VFS" -> "Root"
+            path.startsWith("/VFS/") -> path.removePrefix("/VFS/")
+            path.startsWith("/VFS") -> path.removePrefix("/VFS")
+            else -> path
+        }
+    }
+
+    /**
+     * Checks if moving sourcePath to targetDirPath is valid and non-recursive.
+     */
+    fun isMoveValid(sourcePath: String, targetDirPath: String): Boolean {
+        if (sourcePath == targetDirPath) return false
+        if (targetDirPath.startsWith("$sourcePath/")) return false
+        return true
+    }
+
+    /**
+     * Moves a directory (and all its nested contents) to a target directory.
+     */
+    fun moveDirectory(sourcePath: String, targetDirPath: String, context: Context): Boolean {
+        if (!isMoveValid(sourcePath, targetDirPath)) return false
+
+        val sourceNode = findNodeByPath(rootNode, sourcePath) ?: return false
+        val targetDir = findNodeByPath(rootNode, targetDirPath) ?: return false
+        if (!targetDir.isDirectory) return false
+
+        val removed = deleteNodeRecursive(rootNode, sourcePath)
+        if (!removed) return false
+
+        fun updatePaths(node: VfsNode, newParentPath: String) {
+            node.path = if (newParentPath == "/VFS") "/VFS/${node.name}" else "$newParentPath/${node.name}"
+            if (node.isDirectory) {
+                node.children.forEach { child ->
+                    updatePaths(child, node.path)
+                }
+            }
+        }
+        updatePaths(sourceNode, targetDirPath)
+
+        targetDir.children.add(sourceNode)
+        saveState(context)
+        return true
+    }
+
+    /**
      * Removes an application shortcut specifically from a given directory path.
      */
     fun removeAppFromDirectory(dirPath: String, packageName: String, context: Context): Boolean {
