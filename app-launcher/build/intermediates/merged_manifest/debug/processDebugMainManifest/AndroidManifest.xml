@@ -57,6 +57,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- Broadcast Receiver for Package Installation & VFS Auto-Sync -->
+        <receiver
+            android:name="com.steplauncher.app.PackageChangeReceiver"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_ADDED" />
+                <action android:name="android.intent.action.PACKAGE_REMOVED" />
+                <action android:name="android.intent.action.PACKAGE_CHANGED" />
+
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+
         <!-- Standalone AppWidgetProvider Registration -->
         <receiver
             android:name="com.steplauncher.widget.StepLauncherWidgetProvider"

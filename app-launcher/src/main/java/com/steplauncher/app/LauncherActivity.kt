@@ -14,6 +14,7 @@ import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -86,9 +87,10 @@ class LauncherActivity : AppCompatActivity() {
         binding = ActivityLauncherBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Initialize default dock configurations and widget host
+        // Initialize default dock configurations, widget host, and VFS Program Manager
         DockManager.initializeDefaults(this)
         WorkspaceWidgetHostManager.init(this)
+        com.steplauncher.core.vfs.VfsProgramManager.init(this)
 
         DockManager.addChangeListener(dockChangeListener)
 
@@ -368,7 +370,7 @@ class LauncherActivity : AppCompatActivity() {
                 }
             }
             is DockTile.VfsCategoryLink -> {
-                Toast.makeText(this, "VFS Category: ${tile.title}", Toast.LENGTH_SHORT).show()
+                showVfsProgramExplorerDialog("/VFS/${tile.category.displayName}")
             }
             is DockTile.InternalDockApp -> {
                 if (tile.moduleType.equals("WMCLOCK", ignoreCase = true)) {
@@ -1071,6 +1073,187 @@ class LauncherActivity : AppCompatActivity() {
                 targetList.add(newTile)
                 DockManager.notifyChanged(this)
             }
+            .show()
+    }
+
+    fun refreshLauncherUi() {
+        refreshDocks()
+    }
+
+    private data class VfsDisplayItem(
+        val label: String,
+        val isDir: Boolean,
+        val path: String,
+        val packageName: String? = null,
+        val iconSymbol: String = "📁",
+        val isParentLink: Boolean = false,
+        val hasAttention: Boolean = false,
+        val badgeText: String? = null
+    )
+
+    private fun showVfsProgramExplorerDialog(dirPath: String = "/VFS") {
+        val currentNode = com.steplauncher.core.vfs.VfsProgramManager.findNodeByPath(
+            com.steplauncher.core.vfs.VfsProgramManager.rootNode, dirPath
+        ) ?: com.steplauncher.core.vfs.VfsProgramManager.rootNode
+
+        val pm = packageManager
+        val items = mutableListOf<VfsDisplayItem>()
+
+        // Add parent directory link if not root
+        if (currentNode.path != "/VFS" && currentNode.path.contains("/")) {
+            val parentPath = currentNode.path.substringBeforeLast("/", "/VFS").ifEmpty { "/VFS" }
+            items.add(VfsDisplayItem(label = "⬆️ .. (Parent Directory)", isDir = true, path = parentPath, isParentLink = true))
+        }
+
+        // Add child subdirectories and application shortcuts
+        currentNode.children.forEach { child ->
+            val hasBadge = if (!child.isDirectory && !child.targetPackage.isNullOrEmpty()) {
+                DockManager.isTileAttentionRequested(child.targetPackage!!)
+            } else false
+
+            val badgeText = if (!child.isDirectory && !child.targetPackage.isNullOrEmpty()) {
+                DockManager.getTileBadgeText(child.targetPackage!!)
+            } else null
+
+            items.add(
+                VfsDisplayItem(
+                    label = if (child.isDirectory) "${child.iconSymbol} ${child.name}/" else "${child.iconSymbol} ${child.name}",
+                    isDir = child.isDirectory,
+                    path = child.path,
+                    packageName = child.targetPackage,
+                    iconSymbol = child.iconSymbol,
+                    hasAttention = hasBadge,
+                    badgeText = badgeText
+                )
+            )
+        }
+
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(30, 20, 30, 20)
+        }
+
+        val tvHeader = TextView(this).apply {
+            text = "📂 VFS Path: ${currentNode.path} (${currentNode.children.size} items)"
+            textSize = 12f
+            setPadding(10, 0, 10, 20)
+        }
+        layout.addView(tvHeader)
+
+        val btnRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 0, 0, 20)
+        }
+
+        val btnNewFolder = Button(this).apply {
+            text = "📁 + Folder"
+            textSize = 11f
+            setOnClickListener {
+                showCreateVfsFolderDialog(currentNode.path)
+            }
+        }
+        val btnAddApp = Button(this).apply {
+            text = "📱 + Add App"
+            textSize = 11f
+            setOnClickListener {
+                showAddAppToVfsDialog(currentNode.path)
+            }
+        }
+        val btnSync = Button(this).apply {
+            text = "🔄 Auto-Sync"
+            textSize = 11f
+            setOnClickListener {
+                com.steplauncher.core.vfs.VfsProgramManager.synchronizeVfs(this@LauncherActivity)
+                Toast.makeText(this@LauncherActivity, "🔄 VFS Auto-Synchronization Complete!", Toast.LENGTH_SHORT).show()
+                showVfsProgramExplorerDialog(currentNode.path)
+            }
+        }
+
+        btnRow.addView(btnNewFolder, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
+        btnRow.addView(btnAddApp, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
+        btnRow.addView(btnSync, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
+        layout.addView(btnRow)
+
+        val displayStrings = items.map { item ->
+            val badgeStr = if (!item.badgeText.isNullOrEmpty()) " [🔴 ${item.badgeText}]" else if (item.hasAttention) " [🔴 ATTENTION]" else ""
+            "${item.label}$badgeStr"
+        }.toTypedArray()
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("💻 VFS Program Manager")
+            .setView(layout)
+            .setItems(displayStrings) { _, which ->
+                val selectedItem = items[which]
+                if (selectedItem.isParentLink || selectedItem.isDir) {
+                    showVfsProgramExplorerDialog(selectedItem.path)
+                } else if (!selectedItem.packageName.isNullOrEmpty()) {
+                    // Clear attention if active
+                    DockManager.clearAttention(selectedItem.packageName!!, this)
+                    val launchIntent = pm.getLaunchIntentForPackage(selectedItem.packageName!!)
+                    if (launchIntent != null) {
+                        try { startActivity(launchIntent) } catch (e: Exception) {}
+                        DockManager.launchAndAddToRunningStack(selectedItem.label, selectedItem.iconSymbol, selectedItem.packageName!!, launchIntent)
+                    } else {
+                        Toast.makeText(this, "Unable to launch ${selectedItem.label}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setPositiveButton("Close", null)
+            .show()
+    }
+
+    private fun showCreateVfsFolderDialog(parentPath: String) {
+        val input = EditText(this).apply {
+            hint = "Folder Name (e.g. Utilities, Games, Retro)"
+            setPadding(40, 20, 40, 20)
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("📁 Create New VFS Directory")
+            .setMessage("Creating folder under $parentPath:")
+            .setView(input)
+            .setPositiveButton("Create") { _, _ ->
+                val name = input.text.toString().trim()
+                if (name.isNotEmpty()) {
+                    val created = com.steplauncher.core.vfs.VfsProgramManager.createDirectory(parentPath, name, this)
+                    if (created != null) {
+                        Toast.makeText(this, "📁 Folder created: $name", Toast.LENGTH_SHORT).show()
+                        showVfsProgramExplorerDialog(created.path)
+                    } else {
+                        Toast.makeText(this, "Failed to create directory", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showAddAppToVfsDialog(targetDirPath: String) {
+        val pm = packageManager
+        val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
+            addCategory(Intent.CATEGORY_LAUNCHER)
+        }
+        val apps = pm.queryIntentActivities(mainIntent, 0)
+            .map {
+                val label = it.loadLabel(pm).toString()
+                val pkg = it.activityInfo.packageName
+                Pair(label, pkg)
+            }
+            .sortedBy { it.first.lowercase() }
+
+        val labels = apps.map { "${it.first} (${it.second})" }.toTypedArray()
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("📱 Add Application Shortcut to $targetDirPath")
+            .setItems(labels) { _, which ->
+                val (label, pkg) = apps[which]
+                val added = com.steplauncher.core.vfs.VfsProgramManager.addAppToDirectory(targetDirPath, pkg, label, "📱", this)
+                if (added) {
+                    Toast.makeText(this, "Added $label to $targetDirPath", Toast.LENGTH_SHORT).show()
+                    showVfsProgramExplorerDialog(targetDirPath)
+                }
+            }
+            .setNegativeButton("Cancel", null)
             .show()
     }
 }

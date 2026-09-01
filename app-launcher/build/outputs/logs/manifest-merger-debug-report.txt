@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:2:1-57:12
-INJECTED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:2:1-57:12
-INJECTED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:2:1-57:12
-INJECTED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:2:1-57:12
+ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:2:1-69:12
+INJECTED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:2:1-69:12
+INJECTED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:2:1-69:12
+INJECTED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:2:1-69:12
 MERGED from [androidx.databinding:viewbinding:8.7.3] /data/data/com.termux/files/home/.gradle/caches/9.6.1/transforms/ec872be9369e4a90c9a3b2aad44b8e0c/transformed/viewbinding-8.7.3/AndroidManifest.xml:2:1-7:12
 MERGED from [:app-widget] /data/data/com.termux/files/home/Projects/steplauncher/app-widget/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:2:1-7:12
 MERGED from [:core-renderer] /data/data/com.termux/files/home/Projects/steplauncher/core-renderer/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml:2:1-7:12
@@ -65,8 +65,8 @@ ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/s
 	android:name
 		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:4:22-74
 application
-ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:6:5-55:19
-INJECTED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:6:5-55:19
+ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:6:5-67:19
+INJECTED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:6:5-67:19
 MERGED from [com.google.android.material:material:1.11.0] /data/data/com.termux/files/home/.gradle/caches/9.6.1/transforms/776989f7844d3e05dd0eb1d666c83d57/transformed/material-1.11.0/AndroidManifest.xml:22:5-20
 MERGED from [com.google.android.material:material:1.11.0] /data/data/com.termux/files/home/.gradle/caches/9.6.1/transforms/776989f7844d3e05dd0eb1d666c83d57/transformed/material-1.11.0/AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /data/data/com.termux/files/home/.gradle/caches/9.6.1/transforms/32bf504f7ccaa205167596571486643a/transformed/constraintlayout-2.1.4/AndroidManifest.xml:9:5-20
@@ -147,26 +147,50 @@ action#com.steplauncher.action.REGISTER_DOCKAPP
 ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:39:17-83
 	android:name
 		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:39:25-80
-receiver#com.steplauncher.widget.StepLauncherWidgetProvider
-ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:44:9-54:20
-	android:label
-		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:47:13-53
+receiver#com.steplauncher.app.PackageChangeReceiver
+ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:44:9-53:20
 	android:exported
 		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:46:13-36
 	android:name
-		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:45:13-78
+		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:45:13-50
+intent-filter#action:name:android.intent.action.PACKAGE_ADDED+action:name:android.intent.action.PACKAGE_CHANGED+action:name:android.intent.action.PACKAGE_REMOVED+data:scheme:package
+ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:47:13-52:29
+action#android.intent.action.PACKAGE_ADDED
+ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:48:17-78
+	android:name
+		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:48:25-75
+action#android.intent.action.PACKAGE_REMOVED
+ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:49:17-80
+	android:name
+		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:49:25-77
+action#android.intent.action.PACKAGE_CHANGED
+ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:50:17-80
+	android:name
+		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:50:25-77
+data
+ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:51:17-50
+	android:scheme
+		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:51:23-47
+receiver#com.steplauncher.widget.StepLauncherWidgetProvider
+ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:56:9-66:20
+	android:label
+		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:59:13-53
+	android:exported
+		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:58:13-36
+	android:name
+		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:57:13-78
 intent-filter#action:name:android.appwidget.action.APPWIDGET_UPDATE
-ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:48:13-50:29
+ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:60:13-62:29
 action#android.appwidget.action.APPWIDGET_UPDATE
-ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:49:17-84
+ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:61:17-84
 	android:name
-		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:49:25-81
+		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:61:25-81
 meta-data#android.appwidget.provider
-ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:51:13-53:69
+ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:63:13-65:69
 	android:resource
-		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:53:17-66
+		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:65:17-66
 	android:name
-		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:52:17-58
+		ADDED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml:64:17-58
 uses-sdk
 INJECTED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /data/data/com.termux/files/home/Projects/steplauncher/app-launcher/src/main/AndroidManifest.xml

@@ -185,7 +185,7 @@ object DefaultAppResolver {
             val isMatch = when (category) {
                 VfsCategory.SOCIAL_MEDIA -> isSocialPackage(pkg, label, appInfo)
                 VfsCategory.MULTIMEDIA -> isMultimediaPackage(pkg, label, appInfo)
-                else -> false
+                else -> categorizeApp(pkg, label, appInfo) == category
             }
 
             if (isMatch) {
@@ -201,6 +201,55 @@ object DefaultAppResolver {
             }
         }
         return result
+    }
+
+    fun categorizeApp(pkg: String, label: String, appInfo: ApplicationInfo): VfsCategory {
+        val lower = "$pkg $label".lowercase()
+
+        // 1. Phone
+        if (lower.contains("dialer") || lower.contains("phone") || lower.contains("contacts")) {
+            return VfsCategory.PHONE
+        }
+        // 2. Browser
+        if (lower.contains("chrome") || lower.contains("browser") || lower.contains("firefox") || lower.contains("opera") || lower.contains("edge")) {
+            return VfsCategory.BROWSER
+        }
+        // 3. Camera
+        if (lower.contains("camera") || lower.contains("cam")) {
+            return VfsCategory.CAMERA
+        }
+        // 4. Games
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && appInfo.category == ApplicationInfo.CATEGORY_GAME) {
+            return VfsCategory.GAMES
+        }
+        if (lower.contains("game") || lower.contains("craft") || lower.contains("race") || lower.contains("puzzle") || lower.contains("arcade")) {
+            return VfsCategory.GAMES
+        }
+        // 5. Social Media
+        if (isSocialPackage(pkg, label, appInfo)) {
+            return VfsCategory.SOCIAL_MEDIA
+        }
+        // 6. Multimedia
+        if (isMultimediaPackage(pkg, label, appInfo)) {
+            return VfsCategory.MULTIMEDIA
+        }
+        // 7. Productivity
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && appInfo.category == ApplicationInfo.CATEGORY_PRODUCTIVITY) {
+            return VfsCategory.PRODUCTIVITY
+        }
+        if (lower.contains("mail") || lower.contains("notes") || lower.contains("office") || lower.contains("docs") || lower.contains("pdf") || lower.contains("calendar") || lower.contains("calculator") || lower.contains("clock")) {
+            return VfsCategory.PRODUCTIVITY
+        }
+        // 8. Development
+        if (lower.contains("termux") || lower.contains("code") || lower.contains("terminal") || lower.contains("ide") || lower.contains("git") || lower.contains("dev") || lower.contains("compiler") || lower.contains("steplauncher")) {
+            return VfsCategory.DEVELOPMENT
+        }
+        // 9. System
+        if (lower.contains("settings") || lower.contains("system") || lower.contains("files") || lower.contains("installer") || lower.contains("vfs")) {
+            return VfsCategory.SYSTEM
+        }
+
+        return VfsCategory.UNSORTED
     }
 
     private fun isSocialPackage(pkg: String, label: String, appInfo: ApplicationInfo): Boolean {

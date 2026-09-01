@@ -219,6 +219,32 @@ object DockManager {
         }
     }
 
+    fun isTileAttentionRequested(tileIdOrPkg: String): Boolean {
+        val allLists = workspaceDocks + listOf(bottomLeftDockTiles, bottomDockTiles)
+        for (list in allLists) {
+            for (tile in list) {
+                val matches = tile.id == tileIdOrPkg ||
+                        (tile is DockTile.RunningTask && tile.packageName == tileIdOrPkg) ||
+                        (tile is DockTile.AppShortcut && tile.packageName == tileIdOrPkg)
+                if (matches && tile.isAttentionRequested) return true
+            }
+        }
+        return false
+    }
+
+    fun getTileBadgeText(tileIdOrPkg: String): String? {
+        val allLists = workspaceDocks + listOf(bottomLeftDockTiles, bottomDockTiles)
+        for (list in allLists) {
+            for (tile in list) {
+                val matches = tile.id == tileIdOrPkg ||
+                        (tile is DockTile.RunningTask && tile.packageName == tileIdOrPkg) ||
+                        (tile is DockTile.AppShortcut && tile.packageName == tileIdOrPkg)
+                if (matches && !tile.attentionBadgeText.isNullOrEmpty()) return tile.attentionBadgeText
+            }
+        }
+        return null
+    }
+
     fun scaleIconSize(scaleFactor: Float, context: Context? = null) {
         if (isLayoutLocked) return
         val newSize = (tileIconSizeDp * scaleFactor).toInt().coerceIn(24, 96)
