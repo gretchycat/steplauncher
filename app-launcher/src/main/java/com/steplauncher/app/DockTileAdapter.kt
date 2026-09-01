@@ -18,6 +18,11 @@ import java.util.Locale
 
 class DockTileAdapter(
     val tiles: MutableList<DockTile>,
+    var isBottomDock: Boolean = false,
+    var isRightDock: Boolean = false,
+    var isPortrait: Boolean = true,
+    var parentContainerWidthPx: Int = 0,
+    var parentContainerHeightPx: Int = 0,
     private val onTileClick: (DockTile) -> Unit,
     private val onTileLongClickMenu: (DockTile, view: View) -> Unit
 ) : RecyclerView.Adapter<DockTileAdapter.TileViewHolder>() {
@@ -47,11 +52,26 @@ class DockTileAdapter(
         val density = holder.itemView.resources.displayMetrics.density
         val iconSizePx = (iconSizeDp * density).toInt()
         val containerSizePx = ((iconSizeDp + 36) * density).toInt()
+        val tileCount = tiles.size.coerceAtLeast(1)
 
         val lp = holder.itemView.layoutParams
         if (lp != null) {
-            lp.width = containerSizePx
-            lp.height = containerSizePx
+            if (isBottomDock && isPortrait && parentContainerWidthPx > 0) {
+                // Portrait mode: Bottom menu scales to fill the complete width
+                val calculatedWidth = (parentContainerWidthPx - (16 * density).toInt()) / tileCount
+                val minWidth = (48 * density).toInt()
+                lp.width = calculatedWidth.coerceAtLeast(minWidth)
+                lp.height = containerSizePx
+            } else if (isRightDock && !isPortrait && parentContainerHeightPx > 0) {
+                // Landscape mode: Right dock resizes items into the number of items in the right side dock
+                val calculatedHeight = (parentContainerHeightPx - (32 * density).toInt()) / tileCount
+                val minHeight = (48 * density).toInt()
+                lp.width = containerSizePx
+                lp.height = calculatedHeight.coerceAtLeast(minHeight)
+            } else {
+                lp.width = containerSizePx
+                lp.height = containerSizePx
+            }
             holder.itemView.layoutParams = lp
         }
 
@@ -62,19 +82,12 @@ class DockTileAdapter(
             holder.ivAppIcon.layoutParams = ivLp
         }
 
-        holder.tvIcon.textSize = iconSizeDp * 0.7f
-
-        // Dynamic Accent / Attention Color Tinting for Frosted Glass Tile Background
-        val targetTintHex = if (tile.isAttentionRequested) DockManager.attentionColorHex else DockManager.accentColorHex
-        if (!targetTintHex.isNullOrEmpty() && (targetTintHex != "#FFFFFF" || tile.isAttentionRequested)) {
-            try {
-                val colorInt = Color.parseColor(targetTintHex)
-                holder.itemView.background?.mutate()?.setTint(colorInt)
-            } catch (e: Exception) {
-                holder.itemView.background?.mutate()?.clearColorFilter()
-            }
-        } else {
-            holder.itemView.background?.mutate()?.clearColorFilter()
+        val tvLp = holder.tvIcon.layoutParams
+        if (tvLp != null) {
+            tvLp.width = iconSizePx
+            tvLp.height = iconSizePx
+            holder.tvIcon.layoutParams = tvLp
+            holder.tvIcon.textSize = iconSizeDp * 0.55f
         }
 
         // Try loading real application icon from PackageManager for App Shortcuts & Running Tasks
@@ -194,74 +207,64 @@ class DockTileAdapter(
                 } else if (tile.moduleType.equals("WMBATTERY", ignoreCase = true)) {
                     val bat = com.steplauncher.core.vfs.BatteryUtils.getBatteryStatus(holder.itemView.context)
                     holder.tvTitle.text = "${bat.levelPercent}%"
-                    holder.tvSubtitle.text = if (bat.isCharging) "⚡ ${bat.chargePlugStr}" else "🔋 Discharging"
-                    holder.tvIcon.text = if (bat.isCharging) "⚡" else if (bat.levelPercent <= 20) "🪫" else "🔋"
-
-                    val batColorHex = when {
-                        bat.levelPercent <= 20 -> DockManager.colorHighHex
-                        bat.levelPercent <= 40 -> DockManager.colorMedHex
-                        else -> DockManager.colorLowHex
-                    }
-                    try { holder.tvTitle.setTextColor(Color.parseColor(batColorHex)) } catch (e: Exception) {}
-                } else if (tile.moduleType.equals("WMMON", ignoreCase = true) || tile.moduleType.equals("TELEMETRY", ignoreCase = true)) {
-                    val mode = DockManager.getWmMonMode(tile.id)
-                    val density = holder.itemView.resources.displayMetrics.density
-                    val graphPx = (iconSizeDp * density).toInt().coerceAtLeast(64)
-
+                    holder.tvSubtitle.text = if (bat.isCharging) "⚡ ${bat.chargePlugStr}" else "Discharging"
+                    holder.ivAppIcon.setImageResource(R.drawable.ic_cat_system)
                     holder.ivAppIcon.visibility = View.VISIBLE
                     holder.tvIcon.visibility = View.GONE
 
-                    when (mode) {
-                        0 -> { // CPU Line Graph
-                            val cpu = com.steplauncher.core.vfs.SysMonUtils.getCpuMetrics()
-                            val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawCpuLineGraph(
-                                graphPx, graphPx, com.steplauncher.core.vfs.SysMonUtils.cpuHistory,
+                    val batColorHex = when {
+                        bat.levelPercent <= 20 -> DockManager.colorHighHex
+                        bat.levelPercent <= 50 -> DockManager.colorMedHex
+                        else -> DockManager.colorLowHex
+                    }
+                    try {
+                        val colorInt = Color.parseColor(batColorHex)
+                        holder.ivAppIcon.setColorFilter(colorInt)
+                    } catch (e: Exception) {}
+                } else if (tile.moduleType.equals("WMMON", ignoreCase = true) || tile.moduleType.equals("TELEMETRY", ignoreCase = true)) {
+                    val mode = DockManager.getWmMonMode(tile.id)
+                    val graphBmp = when (mode) {
+                        0 -> { // CPU Sparkline Line Graph
+                            holder.tvSubtitle.text = "CPU Load"
+                            com.steplauncher.core.renderer.SparklineGraphRenderer.drawCpuLineGraph(
+                                iconSizePx, iconSizePx, com.steplauncher.core.vfs.SysMonUtils.cpuHistory,
                                 DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                             )
-                            holder.ivAppIcon.setImageBitmap(bmp)
-                            holder.tvTitle.text = "CPU: ${cpu.cpuPercent}%"
-                            holder.tvSubtitle.text = "${cpu.numCores} Cores"
                         }
-                        1 -> { // Memory Bar Graph
+                        1 -> { // RAM Usage Segmented Bar Graph
                             val mem = com.steplauncher.core.vfs.SysMonUtils.getMemoryMetrics(holder.itemView.context)
-                            val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawMemoryBarGraph(
-                                graphPx, graphPx, mem.ramUsagePercent,
+                            holder.tvSubtitle.text = "RAM ${mem.ramUsagePercent}%"
+                            com.steplauncher.core.renderer.SparklineGraphRenderer.drawMemoryBarGraph(
+                                iconSizePx, iconSizePx, mem.ramUsagePercent,
                                 DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                             )
-                            holder.ivAppIcon.setImageBitmap(bmp)
-                            holder.tvTitle.text = "RAM: ${mem.ramUsagePercent}%"
-                            holder.tvSubtitle.text = "${mem.usedRamMb}M / ${mem.totalRamMb}M"
                         }
-                        2 -> { // Storage Gauge Arc Graph
+                        2 -> { // Storage Capacity Gauge Arc Graph
                             val storage = com.steplauncher.core.vfs.SysMonUtils.getStorageMetrics(holder.itemView.context)
-                            val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawStorageGaugeGraph(
-                                graphPx, graphPx, storage.storagePercentUsed,
+                            holder.tvSubtitle.text = "Disk ${storage.storagePercentUsed}%"
+                            com.steplauncher.core.renderer.SparklineGraphRenderer.drawStorageGaugeGraph(
+                                iconSizePx, iconSizePx, storage.storagePercentUsed,
                                 DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                             )
-                            holder.ivAppIcon.setImageBitmap(bmp)
-                            holder.tvTitle.text = "Disk: ${storage.storagePercentUsed}%"
-                            holder.tvSubtitle.text = "${String.format(Locale.US, "%.1f", storage.internalFreeGb)}G Free"
                         }
-                        3 -> { // Network Wave Graph
+                        else -> { // Network Bandwidth Dual Wave Graph
                             val net = com.steplauncher.core.vfs.SysMonUtils.getNetworkMetrics(holder.itemView.context)
-                            val bmp = com.steplauncher.core.renderer.SparklineGraphRenderer.drawNetworkWaveGraph(
-                                graphPx, graphPx,
-                                com.steplauncher.core.vfs.SysMonUtils.rxHistory,
-                                com.steplauncher.core.vfs.SysMonUtils.txHistory,
+                            holder.tvSubtitle.text = "Net ${net.rxRateKbps}K/s"
+                            com.steplauncher.core.renderer.SparklineGraphRenderer.drawNetworkWaveGraph(
+                                iconSizePx, iconSizePx, com.steplauncher.core.vfs.SysMonUtils.rxHistory, com.steplauncher.core.vfs.SysMonUtils.txHistory,
                                 DockManager.graphicColorHex
                             )
-                            holder.ivAppIcon.setImageBitmap(bmp)
-                            holder.tvTitle.text = "↓${net.rxRateKbps}K ↑${net.txRateKbps}K"
-                            holder.tvSubtitle.text = net.ipAddress
                         }
                     }
-                } else {
-                    holder.tvSubtitle.text = tile.moduleType
+
+                    holder.ivAppIcon.setImageBitmap(graphBmp)
+                    holder.ivAppIcon.visibility = View.VISIBLE
+                    holder.tvIcon.visibility = View.GONE
+                    holder.itemView.alpha = 1.0f
                 }
-                holder.itemView.alpha = 1.0f
             }
             is DockTile.ExternalDockApp -> {
-                holder.tvSubtitle.text = "Ext DockApp"
+                holder.tvSubtitle.text = "Plugin"
                 holder.itemView.alpha = 1.0f
             }
             is DockTile.PlaceholderBox -> {

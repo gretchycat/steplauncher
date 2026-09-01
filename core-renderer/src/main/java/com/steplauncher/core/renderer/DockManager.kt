@@ -32,7 +32,47 @@ object DockManager {
     // Default icon size set to 56dp (twice as big as previous 28dp/30dp)
     var tileIconSizeDp: Int = 56
     var isLayoutLocked: Boolean = false
-    var currentWorkspaceIndex: Int = 0
+    private val displayWorkspaceSelections = mutableMapOf<Int, Int>()
+
+    var currentWorkspaceIndex: Int
+        get() = displayWorkspaceSelections[0] ?: 0
+        set(value) {
+            displayWorkspaceSelections[0] = value
+        }
+
+    fun getWorkspaceIndexForDisplay(displayId: Int): Int {
+        if (workspaceDocks.isEmpty()) return 0
+        val savedIndex = displayWorkspaceSelections[displayId] ?: (if (displayId == 0) 0 else (displayId % workspaceDocks.size))
+        return savedIndex.coerceIn(0, workspaceDocks.size - 1)
+    }
+
+    fun setWorkspaceIndexForDisplay(displayId: Int, index: Int, context: Context? = null) {
+        if (workspaceDocks.isEmpty()) return
+        val targetIndex = index.coerceIn(0, workspaceDocks.size - 1)
+        displayWorkspaceSelections[displayId] = targetIndex
+        notifyChanged(context)
+    }
+
+    fun nextWorkspaceForDisplay(displayId: Int, context: Context? = null) {
+        if (workspaceDocks.isEmpty()) return
+        val curr = getWorkspaceIndexForDisplay(displayId)
+        setWorkspaceIndexForDisplay(displayId, (curr + 1) % workspaceDocks.size, context)
+    }
+
+    fun prevWorkspaceForDisplay(displayId: Int, context: Context? = null) {
+        if (workspaceDocks.isEmpty()) return
+        val curr = getWorkspaceIndexForDisplay(displayId)
+        setWorkspaceIndexForDisplay(displayId, (curr - 1 + workspaceDocks.size) % workspaceDocks.size, context)
+    }
+
+    fun getTopRightDockTilesForDisplay(displayId: Int): MutableList<DockTile> {
+        if (workspaceDocks.isEmpty()) {
+            workspaceDocks.add(mutableListOf())
+        }
+        val idx = getWorkspaceIndexForDisplay(displayId)
+        return workspaceDocks[idx]
+    }
+
     var accentColorHex: String = "#FFFFFF"      // Default Frosted White
     var attentionColorHex: String = "#FF3D00"   // Attention Request Tint (Flashing Amber / Neon Red)
     var badgeBgColorHex: String = "#FF1744"     // Badge Background Color (Red Pill)
@@ -52,14 +92,9 @@ object DockManager {
 
     val totalWorkspaces: Int get() = workspaceDocks.size
 
-    // Dynamic getter returning active workspace tiles
+    // Dynamic getter returning active workspace tiles for primary display
     val topRightDockTiles: MutableList<DockTile>
-        get() {
-            if (workspaceDocks.isEmpty()) {
-                workspaceDocks.add(mutableListOf())
-            }
-            return workspaceDocks[currentWorkspaceIndex.coerceIn(0, workspaceDocks.size - 1)]
-        }
+        get() = getTopRightDockTilesForDisplay(0)
 
     val bottomLeftDockTiles = mutableListOf<DockTile>() // Running Tasks Stack (grows up)
     val bottomDockTiles = mutableListOf<DockTile>()     // Bottom Dock = Global Dock
@@ -88,22 +123,15 @@ object DockManager {
     }
 
     fun switchToWorkspace(index: Int, context: Context? = null) {
-        if (workspaceDocks.isEmpty()) return
-        val targetIndex = index.coerceIn(0, workspaceDocks.size - 1)
-        if (currentWorkspaceIndex != targetIndex) {
-            currentWorkspaceIndex = targetIndex
-            notifyChanged(context)
-        }
+        setWorkspaceIndexForDisplay(0, index, context)
     }
 
     fun nextWorkspace(context: Context? = null) {
-        if (workspaceDocks.isEmpty()) return
-        switchToWorkspace((currentWorkspaceIndex + 1) % workspaceDocks.size, context)
+        nextWorkspaceForDisplay(0, context)
     }
 
     fun prevWorkspace(context: Context? = null) {
-        if (workspaceDocks.isEmpty()) return
-        switchToWorkspace((currentWorkspaceIndex - 1 + workspaceDocks.size) % workspaceDocks.size, context)
+        prevWorkspaceForDisplay(0, context)
     }
 
     /**

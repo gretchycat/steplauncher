@@ -84,6 +84,40 @@ class LauncherActivity : AppCompatActivity() {
         }
     }
 
+    private val activePresentations = mutableMapOf<Int, StepLauncherPresentation>()
+    private var displayManager: android.hardware.display.DisplayManager? = null
+
+    private val displayListener = object : android.hardware.display.DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) {
+            updateSecondaryDisplays()
+        }
+
+        override fun onDisplayRemoved(displayId: Int) {
+            activePresentations[displayId]?.dismiss()
+            activePresentations.remove(displayId)
+        }
+
+        override fun onDisplayChanged(displayId: Int) {
+            activePresentations[displayId]?.refreshDocks()
+        }
+    }
+
+    private fun updateSecondaryDisplays() {
+        val dm = displayManager ?: return
+        val displays = dm.getDisplays(android.hardware.display.DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
+        for (display in displays) {
+            if (!activePresentations.containsKey(display.displayId)) {
+                try {
+                    val presentation = StepLauncherPresentation(this, display)
+                    presentation.show()
+                    activePresentations[display.displayId] = presentation
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLauncherBinding.inflate(layoutInflater)
@@ -95,6 +129,10 @@ class LauncherActivity : AppCompatActivity() {
         com.steplauncher.core.vfs.VfsProgramManager.init(this)
 
         DockManager.addChangeListener(dockChangeListener)
+
+        displayManager = getSystemService(DISPLAY_SERVICE) as? android.hardware.display.DisplayManager
+        displayManager?.registerDisplayListener(displayListener, null)
+        updateSecondaryDisplays()
 
         setupWindowInsets()
         setupRecyclerViews()
@@ -133,6 +171,9 @@ class LauncherActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        displayManager?.unregisterDisplayListener(displayListener)
+        activePresentations.values.forEach { it.dismiss() }
+        activePresentations.clear()
         clockTickerHandler.removeCallbacks(clockTickerRunnable)
         DockManager.removeChangeListener(dockChangeListener)
     }
@@ -288,7 +329,12 @@ class LauncherActivity : AppCompatActivity() {
     }
 
     private fun refreshDocks() {
-        // Render active workspace widget canvas
+        val isPortrait = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT
+        val displayMetrics = resources.displayMetrics
+        val screenWidthPx = displayMetrics.widthPixels
+        val screenHeightPx = displayMetrics.heightPixels
+
+        // Render active workspace widget canvas for primary display
         renderWorkspaceWidgetCanvas(DockManager.currentWorkspaceIndex)
 
         // Bottom-Left Dock: Running Tasks Stack (Hide container and RUNNING header if empty)
@@ -301,19 +347,32 @@ class LauncherActivity : AppCompatActivity() {
             onTileLongClickMenu = { tile, _ -> handleTileLongClickMenu(tile, DockPosition.BOTTOM_LEFT) }
         )
 
-        // Top-Right Dock: Active Workspace Dock
+        // Top-Right Dock: Active Workspace Dock (Auto resizes items into the number of items in the right dock in landscape mode)
         binding.rvDockTopRight.adapter = DockTileAdapter(
             tiles = DockManager.topRightDockTiles,
+            isRightDock = true,
+            isPortrait = isPortrait,
+            parentContainerWidthPx = screenWidthPx,
+            parentContainerHeightPx = screenHeightPx,
             onTileClick = { tile -> handleTileClick(tile, DockPosition.TOP_RIGHT) },
             onTileLongClickMenu = { tile, _ -> handleTileLongClickMenu(tile, DockPosition.TOP_RIGHT) }
         )
 
-        // Bottom Main Dock: Global Dock
+        // Bottom Main Dock: Global Dock (Scales to fill complete width in portrait mode)
         binding.rvDockBottom.adapter = DockTileAdapter(
             tiles = DockManager.bottomDockTiles,
+            isBottomDock = true,
+            isPortrait = isPortrait,
+            parentContainerWidthPx = screenWidthPx,
+            parentContainerHeightPx = screenHeightPx,
             onTileClick = { tile -> handleTileClick(tile, DockPosition.BOTTOM) },
             onTileLongClickMenu = { tile, _ -> handleTileLongClickMenu(tile, DockPosition.BOTTOM) }
         )
+
+        // Synchronize all connected secondary monitor presentations
+        activePresentations.values.forEach { presentation ->
+            presentation.refreshDocks()
+        }
     }
 
     private fun renderWorkspaceWidgetCanvas(workspaceIndex: Int) {
@@ -358,7 +417,7 @@ class LauncherActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleTileClick(tile: DockTile, position: DockPosition) {
+    fun handleTileClick(tile: DockTile, position: DockPosition) {
         when (tile) {
             is DockTile.DockAnchor -> {
                 startActivity(Intent(this, SettingsActivity::class.java))
@@ -676,7 +735,7 @@ class LauncherActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleTileLongClickMenu(tile: DockTile, position: DockPosition) {
+    fun handleTileLongClickMenu(tile: DockTile, position: DockPosition) {
         if (tile is DockTile.DockAnchor) {
             showDockAnchorLongPressMenu(position)
             return
