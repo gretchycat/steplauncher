@@ -13,8 +13,7 @@ import android.graphics.Shader
 object SparklineGraphRenderer {
 
     /**
-     * Subsamples telemetry history using bucket averaging (moving mean) to eliminate erratic point-sampling
-     * jitter and ensure smooth, consistent trend lines across hundreds of data points over time.
+     * Subsamples telemetry history using a fixed sliding window.
      */
     private fun subsampleHistory(history: List<Int>, maxPoints: Int = 30): List<Int> {
         val list = synchronized(history) { history.toList() }
@@ -24,6 +23,7 @@ object SparklineGraphRenderer {
 
     /**
      * Draws a high-resolution detailed telemetry graph with labelled X & Y axes for the dialog view.
+     * Automatically normalizes Y-axis values to the dynamic peak data point in the active window.
      */
     fun drawDetailedTelemetryGraphWithAxes(
         width: Int,
@@ -64,6 +64,12 @@ object SparklineGraphRenderer {
         }
         canvas.drawText(title, marginLeft, 28f, titlePaint)
 
+        val dataRaw = subsampleHistory(history, 60)
+        val data = if (dataRaw.isEmpty()) emptyList() else if (dataRaw.size < 2) listOf(dataRaw.first(), dataRaw.first()) else dataRaw
+
+        val peakDataVal = (data.maxOrNull() ?: 10).coerceAtLeast(10)
+        val maxVal = if (yUnit == "%") 100 else peakDataVal
+
         // Dotted grid lines & Y-Axis Labels
         val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#30FFFFFF")
@@ -90,8 +96,9 @@ object SparklineGraphRenderer {
             }
             canvas.drawPath(gridPath, gridPaint)
 
-            // Y-Axis label
-            canvas.drawText("$lvl$yUnit", marginLeft - 10f, y + 5f, axisLabelPaint)
+            // Y-Axis label normalized dynamically
+            val labelVal = (maxVal * ratio).toInt()
+            canvas.drawText("$labelVal$yUnit", marginLeft - 10f, y + 5f, axisLabelPaint)
         }
 
         // X-Axis Time Labels (-60s, -45s, -30s, -15s, NOW)
@@ -107,17 +114,16 @@ object SparklineGraphRenderer {
             canvas.drawText(label, x, h - 12f, xLabelPaint)
         }
 
-        val dataRaw = subsampleHistory(history, 60)
-        if (dataRaw.isEmpty()) return bitmap
+        if (data.isEmpty()) return bitmap
 
-        val data = if (dataRaw.size < 2) listOf(dataRaw.first(), dataRaw.first()) else dataRaw
         val stepX = graphW / (data.size - 1).coerceAtLeast(1)
 
         val linePath = Path()
         val fillPath = Path()
 
         val startX = marginLeft
-        val startY = marginTop + graphH * (1f - (data[0].coerceIn(0, 100) / 100f))
+        val startRatio = (data[0].toFloat() / maxVal).coerceIn(0f, 1f)
+        val startY = marginTop + graphH * (1f - startRatio)
 
         linePath.moveTo(startX, startY)
         fillPath.moveTo(startX, marginTop + graphH)
@@ -125,7 +131,8 @@ object SparklineGraphRenderer {
 
         for (i in 1 until data.size) {
             val x = startX + (i * stepX)
-            val y = marginTop + graphH * (1f - (data[i].coerceIn(0, 100) / 100f))
+            val ratio = (data[i].toFloat() / maxVal).coerceIn(0f, 1f)
+            val y = marginTop + graphH * (1f - ratio)
             linePath.lineTo(x, y)
             fillPath.lineTo(x, y)
         }
@@ -153,16 +160,18 @@ object SparklineGraphRenderer {
 
         // Highlight latest point
         val latestVal = data.last()
+        val latestRatioPercent = ((latestVal.toFloat() / maxVal) * 100).toInt()
         val latestColor = when {
-            latestVal >= 75 -> Color.parseColor(colorHighHex)
-            latestVal >= 40 -> Color.parseColor(colorMedHex)
+            latestRatioPercent >= 75 -> Color.parseColor(colorHighHex)
+            latestRatioPercent >= 40 -> Color.parseColor(colorMedHex)
             else -> Color.parseColor(colorLowHex)
         }
         val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = latestColor
             style = Paint.Style.FILL
         }
-        val lastY = marginTop + graphH * (1f - (latestVal.coerceIn(0, 100) / 100f))
+        val lastRatio = (latestVal.toFloat() / maxVal).coerceIn(0f, 1f)
+        val lastY = marginTop + graphH * (1f - lastRatio)
         canvas.drawCircle(lastX, lastY, 7f, dotPaint)
 
         return bitmap
@@ -374,7 +383,7 @@ object SparklineGraphRenderer {
     }
 
     /**
-     * Draws a dual Rx/Tx network pulse waveform graph.
+     * Draws a dual Rx/Tx network pulse waveform graph dynamically normalized to peak throughput.
      */
     fun drawNetworkWaveGraph(
         width: Int,
@@ -397,6 +406,9 @@ object SparklineGraphRenderer {
         val paddingY = 14f
         val usableH = (h - (paddingY * 2)) / 2f
 
+        val combined = rxHistory + txHistory
+        val maxPeak = (combined.maxOrNull() ?: 10).coerceAtLeast(10).toFloat()
+
         fun drawSeries(dataRaw: List<Int>, colorHex: String, isUpper: Boolean) {
             val data = subsampleHistory(dataRaw, 30)
             if (data.isEmpty()) return
@@ -406,14 +418,16 @@ object SparklineGraphRenderer {
             val baselineY = if (isUpper) h / 2f - 2f else h / 2f + 2f
 
             val path = Path()
-            val startY = if (isUpper) baselineY - (listData[0].coerceIn(0, 100) / 100f * usableH)
-                         else baselineY + (listData[0].coerceIn(0, 100) / 100f * usableH)
+            val startRatio = (listData[0].toFloat() / maxPeak).coerceIn(0f, 1f)
+            val startY = if (isUpper) baselineY - (startRatio * usableH)
+                         else baselineY + (startRatio * usableH)
 
             path.moveTo(startX, startY)
             for (i in 1 until listData.size) {
                 val x = startX + (i * stepX)
-                val y = if (isUpper) baselineY - (listData[i].coerceIn(0, 100) / 100f * usableH)
-                        else baselineY + (listData[i].coerceIn(0, 100) / 100f * usableH)
+                val ratio = (listData[i].toFloat() / maxPeak).coerceIn(0f, 1f)
+                val y = if (isUpper) baselineY - (ratio * usableH)
+                        else baselineY + (ratio * usableH)
                 path.lineTo(x, y)
             }
 

@@ -169,10 +169,8 @@ object SysMonUtils {
         }
 
         latestNet = NetworkMetrics(rxKbps, txKbps, primaryIp, activeIfaces)
-        val rxPercent = (rxKbps / 50).toInt().coerceIn(5, 100)
-        val txPercent = (txKbps / 50).toInt().coerceIn(5, 100)
-        appendSample(rxHistory, rxPercent)
-        appendSample(txHistory, txPercent)
+        appendSample(rxHistory, rxKbps.toInt())
+        appendSample(txHistory, txKbps.toInt())
     }
 
     private fun appendSample(history: MutableList<Int>, sample: Int) {
