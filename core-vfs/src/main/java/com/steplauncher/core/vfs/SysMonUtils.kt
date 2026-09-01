@@ -36,13 +36,13 @@ data class NetworkMetrics(
 
 object SysMonUtils {
 
-    const val MAX_SAMPLES = 600 // 10 minutes @ 1 sample / second
+    const val MAX_SAMPLES = 60 // Fixed 60-second sliding window queue (1 sample / sec)
 
-    val cpuHistory = mutableListOf<Int>()
-    val memoryHistory = mutableListOf<Int>()
-    val storageHistory = mutableListOf<Int>()
-    val rxHistory = mutableListOf<Int>()
-    val txHistory = mutableListOf<Int>()
+    val cpuHistory = Collections.synchronizedList(mutableListOf<Int>())
+    val memoryHistory = Collections.synchronizedList(mutableListOf<Int>())
+    val storageHistory = Collections.synchronizedList(mutableListOf<Int>())
+    val rxHistory = Collections.synchronizedList(mutableListOf<Int>())
+    val txHistory = Collections.synchronizedList(mutableListOf<Int>())
 
     private var lastRxBytes: Long = TrafficStats.getTotalRxBytes()
     private var lastTxBytes: Long = TrafficStats.getTotalTxBytes()
@@ -178,7 +178,7 @@ object SysMonUtils {
     private fun appendSample(history: MutableList<Int>, sample: Int) {
         synchronized(history) {
             history.add(sample.coerceIn(0, 100))
-            if (history.size > MAX_SAMPLES) {
+            while (history.size > MAX_SAMPLES) {
                 history.removeAt(0)
             }
         }

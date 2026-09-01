@@ -19,18 +19,7 @@ object SparklineGraphRenderer {
     private fun subsampleHistory(history: List<Int>, maxPoints: Int = 30): List<Int> {
         val list = synchronized(history) { history.toList() }
         if (list.isEmpty()) return emptyList()
-        if (list.size <= maxPoints) return list
-
-        val result = mutableListOf<Int>()
-        val chunkSize = list.size.toFloat() / maxPoints
-        for (i in 0 until maxPoints) {
-            val startIdx = (i * chunkSize).toInt().coerceIn(0, list.size - 1)
-            val endIdx = ((i + 1) * chunkSize).toInt().coerceIn(startIdx + 1, list.size)
-            val subList = list.subList(startIdx, endIdx)
-            val avg = if (subList.isNotEmpty()) subList.average().toInt() else list[startIdx]
-            result.add(avg)
-        }
-        return result
+        return if (list.size > maxPoints) list.takeLast(maxPoints) else list
     }
 
     /**
