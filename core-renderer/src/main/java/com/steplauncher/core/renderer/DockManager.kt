@@ -29,8 +29,8 @@ object DockManager {
     private const val KEY_CLOCK_TIME_FMT = "key_clock_time_fmt"
     private const val KEY_CLOCK_DATE_FMT = "key_clock_date_fmt"
 
-    // Default icon size set to 56dp (twice as big as previous 28dp/30dp)
-    var tileIconSizeDp: Int = 56
+    // Default compact tile icon size set to 38dp
+    var tileIconSizeDp: Int = 38
     var isLayoutLocked: Boolean = false
     private val displayWorkspaceSelections = mutableMapOf<Int, Int>()
 

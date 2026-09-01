@@ -24,6 +24,9 @@ public final class ItemDockTileBinding implements ViewBinding {
   public final ImageView ivTileAppIcon;
 
   @NonNull
+  public final FrameLayout tileContainer;
+
+  @NonNull
   public final TextView tvTileIcon;
 
   @NonNull
@@ -36,10 +39,12 @@ public final class ItemDockTileBinding implements ViewBinding {
   public final TextView tvTileWorkspaceBadge;
 
   private ItemDockTileBinding(@NonNull FrameLayout rootView, @NonNull ImageView ivTileAppIcon,
-      @NonNull TextView tvTileIcon, @NonNull TextView tvTileSubtitle, @NonNull TextView tvTileTitle,
+      @NonNull FrameLayout tileContainer, @NonNull TextView tvTileIcon,
+      @NonNull TextView tvTileSubtitle, @NonNull TextView tvTileTitle,
       @NonNull TextView tvTileWorkspaceBadge) {
     this.rootView = rootView;
     this.ivTileAppIcon = ivTileAppIcon;
+    this.tileContainer = tileContainer;
     this.tvTileIcon = tvTileIcon;
     this.tvTileSubtitle = tvTileSubtitle;
     this.tvTileTitle = tvTileTitle;
@@ -79,6 +84,8 @@ public final class ItemDockTileBinding implements ViewBinding {
         break missingId;
       }
 
+      FrameLayout tileContainer = (FrameLayout) rootView;
+
       id = R.id.tv_tile_icon;
       TextView tvTileIcon = ViewBindings.findChildViewById(rootView, id);
       if (tvTileIcon == null) {
@@ -103,8 +110,8 @@ public final class ItemDockTileBinding implements ViewBinding {
         break missingId;
       }
 
-      return new ItemDockTileBinding((FrameLayout) rootView, ivTileAppIcon, tvTileIcon,
-          tvTileSubtitle, tvTileTitle, tvTileWorkspaceBadge);
+      return new ItemDockTileBinding((FrameLayout) rootView, ivTileAppIcon, tileContainer,
+          tvTileIcon, tvTileSubtitle, tvTileTitle, tvTileWorkspaceBadge);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

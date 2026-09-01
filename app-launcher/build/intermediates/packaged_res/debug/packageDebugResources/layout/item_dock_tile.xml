@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="92dp"
-    android:layout_height="92dp"
-    android:layout_margin="4dp"
+    android:id="@+id/tile_container"
+    android:layout_width="64dp"
+    android:layout_height="64dp"
+    android:layout_margin="2dp"
     android:background="@drawable/bg_frosted_glass_tile_base"
     android:clickable="true"
     android:focusable="true">
@@ -12,13 +13,13 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:padding="6dp">
+        android:padding="3dp">
 
-        <!-- Real Application Graphic Icon (Default 56dp - twice as big) -->
+        <!-- Real Application Graphic Icon (Compact default 36dp) -->
         <ImageView
             android:id="@+id/iv_tile_app_icon"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:scaleType="fitCenter"
             android:visibility="gone" />
 
@@ -28,7 +29,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="📎"
-            android:textSize="40sp"
+            android:textSize="26sp"
             android:includeFontPadding="false" />
 
         <!-- Dock Item Title (Bold Format) -->
@@ -36,10 +37,10 @@
             android:id="@+id/tv_tile_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_marginTop="2dp"
             android:text="Workspace 1"
             android:textColor="@color/text_primary"
-            android:textSize="10sp"
+            android:textSize="9sp"
             android:textStyle="bold"
             android:gravity="center"
             android:maxLines="1"
@@ -52,7 +53,7 @@
             android:layout_height="wrap_content"
             android:text=""
             android:textColor="@color/text_secondary"
-            android:textSize="8sp"
+            android:textSize="7sp"
             android:gravity="center"
             android:maxLines="1"
             android:ellipsize="end" />
@@ -62,13 +63,13 @@
     <!-- Lower Left Corner Workspace Number Badge -->
     <TextView
         android:id="@+id/tv_tile_workspace_badge"
-        android:layout_width="18dp"
-        android:layout_height="18dp"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
         android:layout_gravity="bottom|start"
-        android:layout_margin="3dp"
+        android:layout_margin="2dp"
         android:background="@drawable/bg_glass_dock_rail"
         android:textColor="@color/cyan_accent"
-        android:textSize="9sp"
+        android:textSize="8sp"
         android:textStyle="bold"
         android:gravity="center"
         android:text="1"

@@ -47,47 +47,52 @@ class DockTileAdapter(
         holder.tvTitle.text = tile.title
         holder.tvTitle.setTypeface(null, Typeface.BOLD)
 
-        // Dynamic icon sizing based on configuration (DockManager.tileIconSizeDp)
-        val iconSizeDp = DockManager.tileIconSizeDp
         val density = holder.itemView.resources.displayMetrics.density
-        val iconSizePx = (iconSizeDp * density).toInt()
-        val containerSizePx = ((iconSizeDp + 36) * density).toInt()
         val tileCount = tiles.size.coerceAtLeast(1)
+
+        var targetContainerWidthPx = ((DockManager.tileIconSizeDp + 26) * density).toInt()
+        var targetContainerHeightPx = ((DockManager.tileIconSizeDp + 26) * density).toInt()
+
+        if (isBottomDock && isPortrait && parentContainerWidthPx > 0) {
+            // Portrait mode: Bottom menu scales to fill the complete width
+            val calculatedWidth = (parentContainerWidthPx - (8 * density).toInt()) / tileCount
+            val maxAllowedWidth = (72 * density).toInt()
+            val minAllowedWidth = (40 * density).toInt()
+            targetContainerWidthPx = calculatedWidth.coerceIn(minAllowedWidth, maxAllowedWidth)
+            targetContainerHeightPx = (58 * density).toInt()
+        } else if (isRightDock && !isPortrait && parentContainerHeightPx > 0) {
+            // Landscape mode: Right dock resizes items into the number of items in the right dock
+            val calculatedHeight = (parentContainerHeightPx - (16 * density).toInt()) / tileCount
+            val maxAllowedHeight = (68 * density).toInt()
+            val minAllowedHeight = (36 * density).toInt()
+            targetContainerWidthPx = (58 * density).toInt()
+            targetContainerHeightPx = calculatedHeight.coerceIn(minAllowedHeight, maxAllowedHeight)
+        }
 
         val lp = holder.itemView.layoutParams
         if (lp != null) {
-            if (isBottomDock && isPortrait && parentContainerWidthPx > 0) {
-                // Portrait mode: Bottom menu scales to fill the complete width
-                val calculatedWidth = (parentContainerWidthPx - (16 * density).toInt()) / tileCount
-                val minWidth = (48 * density).toInt()
-                lp.width = calculatedWidth.coerceAtLeast(minWidth)
-                lp.height = containerSizePx
-            } else if (isRightDock && !isPortrait && parentContainerHeightPx > 0) {
-                // Landscape mode: Right dock resizes items into the number of items in the right side dock
-                val calculatedHeight = (parentContainerHeightPx - (32 * density).toInt()) / tileCount
-                val minHeight = (48 * density).toInt()
-                lp.width = containerSizePx
-                lp.height = calculatedHeight.coerceAtLeast(minHeight)
-            } else {
-                lp.width = containerSizePx
-                lp.height = containerSizePx
-            }
+            lp.width = targetContainerWidthPx
+            lp.height = targetContainerHeightPx
             holder.itemView.layoutParams = lp
         }
 
+        // Dynamically scale icon inside according to available container size
+        val dynamicIconPx = (minOf(targetContainerWidthPx, targetContainerHeightPx) * 0.52).toInt()
+            .coerceIn((20 * density).toInt(), (42 * density).toInt())
+
         val ivLp = holder.ivAppIcon.layoutParams
         if (ivLp != null) {
-            ivLp.width = iconSizePx
-            ivLp.height = iconSizePx
+            ivLp.width = dynamicIconPx
+            ivLp.height = dynamicIconPx
             holder.ivAppIcon.layoutParams = ivLp
         }
 
         val tvLp = holder.tvIcon.layoutParams
         if (tvLp != null) {
-            tvLp.width = iconSizePx
-            tvLp.height = iconSizePx
+            tvLp.width = dynamicIconPx
+            tvLp.height = dynamicIconPx
             holder.tvIcon.layoutParams = tvLp
-            holder.tvIcon.textSize = iconSizeDp * 0.55f
+            holder.tvIcon.textSize = dynamicIconPx / density * 0.55f
         }
 
         // Try loading real application icon from PackageManager for App Shortcuts & Running Tasks
@@ -200,10 +205,10 @@ class DockTileAdapter(
                     holder.tvIcon.visibility = View.GONE
 
                     holder.tvTitle.text = formattedTime
-                    holder.tvTitle.textSize = iconSizeDp * 0.42f
+                    holder.tvTitle.textSize = dynamicIconPx / density * 0.42f
 
                     holder.tvSubtitle.text = formattedDate
-                    holder.tvSubtitle.textSize = iconSizeDp * 0.22f
+                    holder.tvSubtitle.textSize = dynamicIconPx / density * 0.22f
                 } else if (tile.moduleType.equals("WMBATTERY", ignoreCase = true)) {
                     val bat = com.steplauncher.core.vfs.BatteryUtils.getBatteryStatus(holder.itemView.context)
                     holder.tvTitle.text = "${bat.levelPercent}%"
@@ -227,7 +232,7 @@ class DockTileAdapter(
                         0 -> { // CPU Sparkline Line Graph
                             holder.tvSubtitle.text = "CPU Load"
                             com.steplauncher.core.renderer.SparklineGraphRenderer.drawCpuLineGraph(
-                                iconSizePx, iconSizePx, com.steplauncher.core.vfs.SysMonUtils.cpuHistory,
+                                dynamicIconPx, dynamicIconPx, com.steplauncher.core.vfs.SysMonUtils.cpuHistory,
                                 DockManager.graphicColorHex, DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                             )
                         }
@@ -235,7 +240,7 @@ class DockTileAdapter(
                             val mem = com.steplauncher.core.vfs.SysMonUtils.getMemoryMetrics(holder.itemView.context)
                             holder.tvSubtitle.text = "RAM ${mem.ramUsagePercent}%"
                             com.steplauncher.core.renderer.SparklineGraphRenderer.drawMemoryBarGraph(
-                                iconSizePx, iconSizePx, mem.ramUsagePercent,
+                                dynamicIconPx, dynamicIconPx, mem.ramUsagePercent,
                                 DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                             )
                         }
@@ -243,7 +248,7 @@ class DockTileAdapter(
                             val storage = com.steplauncher.core.vfs.SysMonUtils.getStorageMetrics(holder.itemView.context)
                             holder.tvSubtitle.text = "Disk ${storage.storagePercentUsed}%"
                             com.steplauncher.core.renderer.SparklineGraphRenderer.drawStorageGaugeGraph(
-                                iconSizePx, iconSizePx, storage.storagePercentUsed,
+                                dynamicIconPx, dynamicIconPx, storage.storagePercentUsed,
                                 DockManager.colorHighHex, DockManager.colorMedHex, DockManager.colorLowHex
                             )
                         }
@@ -251,7 +256,7 @@ class DockTileAdapter(
                             val net = com.steplauncher.core.vfs.SysMonUtils.getNetworkMetrics(holder.itemView.context)
                             holder.tvSubtitle.text = "Net ${net.rxRateKbps}K/s"
                             com.steplauncher.core.renderer.SparklineGraphRenderer.drawNetworkWaveGraph(
-                                iconSizePx, iconSizePx, com.steplauncher.core.vfs.SysMonUtils.rxHistory, com.steplauncher.core.vfs.SysMonUtils.txHistory,
+                                dynamicIconPx, dynamicIconPx, com.steplauncher.core.vfs.SysMonUtils.rxHistory, com.steplauncher.core.vfs.SysMonUtils.txHistory,
                                 DockManager.graphicColorHex
                             )
                         }
