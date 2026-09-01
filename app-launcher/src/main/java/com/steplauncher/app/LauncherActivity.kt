@@ -1171,13 +1171,80 @@ class LauncherActivity : AppCompatActivity() {
                 showVfsProgramExplorerDialog(currentNode.path)
             }
         }
+        var adapter: VfsGridAdapter? = null
+
+        val batchRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, 0, 0, 10)
+            visibility = if (isVfsMultiSelectMode) View.VISIBLE else View.GONE
+        }
+
+        val btnBatchMove = Button(this).apply {
+            text = "↔️ Move (${selectedVfsPackages.size})"
+            textSize = 10f
+            isEnabled = selectedVfsPackages.isNotEmpty()
+            setOnClickListener {
+                showCollapsibleVfsDirectoryPicker(pkgsToMove = selectedVfsPackages, availableNodes = currentNode.children, sourceDirPath = currentNode.path)
+            }
+        }
+        val btnBatchCopy = Button(this).apply {
+            text = "📋 Copy (${selectedVfsPackages.size})"
+            textSize = 10f
+            isEnabled = selectedVfsPackages.isNotEmpty()
+            setOnClickListener {
+                showCollapsibleVfsDirectoryPicker(pkgsToMove = selectedVfsPackages, availableNodes = currentNode.children, sourceDirPath = currentNode.path)
+            }
+        }
+        val btnBatchDelete = Button(this).apply {
+            text = "🗑️ Delete (${selectedVfsPackages.size})"
+            textSize = 10f
+            isEnabled = selectedVfsPackages.isNotEmpty()
+            setOnClickListener {
+                val count = selectedVfsPackages.size
+                selectedVfsPackages.forEach { pkg ->
+                    com.steplauncher.core.vfs.VfsProgramManager.removeAppFromDirectory(currentNode.path, pkg, this@LauncherActivity)
+                }
+                Toast.makeText(this@LauncherActivity, "Deleted $count applications from ${com.steplauncher.core.vfs.VfsProgramManager.formatVfsPath(currentNode.path)}", Toast.LENGTH_SHORT).show()
+                selectedVfsPackages.clear()
+                isVfsMultiSelectMode = false
+                showVfsProgramExplorerDialog(currentNode.path)
+            }
+        }
+
+        batchRow.addView(btnBatchMove, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
+        batchRow.addView(btnBatchCopy, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
+        batchRow.addView(btnBatchDelete, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
+
         val btnMultiSelect = Button(this).apply {
             text = if (isVfsMultiSelectMode) "❌ Cancel" else "☑️ Select"
             textSize = 11f
             setOnClickListener {
                 isVfsMultiSelectMode = !isVfsMultiSelectMode
                 if (!isVfsMultiSelectMode) selectedVfsPackages.clear()
-                showVfsProgramExplorerDialog(currentNode.path)
+
+                text = if (isVfsMultiSelectMode) "❌ Cancel" else "☑️ Select"
+                batchRow.visibility = if (isVfsMultiSelectMode) View.VISIBLE else View.GONE
+
+                val formatted = com.steplauncher.core.vfs.VfsProgramManager.formatVfsPath(currentNode.path)
+                val selText = if (isVfsMultiSelectMode) " [☑️ ${selectedVfsPackages.size} Selected]" else ""
+                tvHeader.text = "📂 Path: $formatted (${currentNode.children.size} items)$selText"
+
+                btnBatchMove.apply {
+                    text = "↔️ Move (${selectedVfsPackages.size})"
+                    isEnabled = selectedVfsPackages.isNotEmpty()
+                }
+                btnBatchCopy.apply {
+                    text = "📋 Copy (${selectedVfsPackages.size})"
+                    isEnabled = selectedVfsPackages.isNotEmpty()
+                }
+                btnBatchDelete.apply {
+                    text = "🗑️ Delete (${selectedVfsPackages.size})"
+                    isEnabled = selectedVfsPackages.isNotEmpty()
+                }
+
+                adapter?.isMultiSelectMode = isVfsMultiSelectMode
+                adapter?.selectedPackages = selectedVfsPackages
+                adapter?.notifyDataSetChanged()
             }
         }
 
@@ -1186,63 +1253,13 @@ class LauncherActivity : AppCompatActivity() {
         btnRow.addView(btnSync, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
         btnRow.addView(btnMultiSelect, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
         layout.addView(btnRow)
-
-        var btnBatchMove: Button? = null
-        var btnBatchCopy: Button? = null
-        var btnBatchDelete: Button? = null
-
-        // Batch Actions Bar (shown when Multi-Select mode is active)
-        if (isVfsMultiSelectMode) {
-            val batchRow = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setPadding(0, 0, 0, 10)
-            }
-
-            btnBatchMove = Button(this).apply {
-                text = "↔️ Move (${selectedVfsPackages.size})"
-                textSize = 10f
-                isEnabled = selectedVfsPackages.isNotEmpty()
-                setOnClickListener {
-                    showCollapsibleVfsDirectoryPicker(pkgsToMove = selectedVfsPackages, availableNodes = currentNode.children, sourceDirPath = currentNode.path)
-                }
-            }
-            btnBatchCopy = Button(this).apply {
-                text = "📋 Copy (${selectedVfsPackages.size})"
-                textSize = 10f
-                isEnabled = selectedVfsPackages.isNotEmpty()
-                setOnClickListener {
-                    showCollapsibleVfsDirectoryPicker(pkgsToMove = selectedVfsPackages, availableNodes = currentNode.children, sourceDirPath = currentNode.path)
-                }
-            }
-            btnBatchDelete = Button(this).apply {
-                text = "🗑️ Delete (${selectedVfsPackages.size})"
-                textSize = 10f
-                isEnabled = selectedVfsPackages.isNotEmpty()
-                setOnClickListener {
-                    val count = selectedVfsPackages.size
-                    selectedVfsPackages.forEach { pkg ->
-                        com.steplauncher.core.vfs.VfsProgramManager.removeAppFromDirectory(currentNode.path, pkg, this@LauncherActivity)
-                    }
-                    Toast.makeText(this@LauncherActivity, "Deleted $count applications from ${com.steplauncher.core.vfs.VfsProgramManager.formatVfsPath(currentNode.path)}", Toast.LENGTH_SHORT).show()
-                    selectedVfsPackages.clear()
-                    isVfsMultiSelectMode = false
-                    showVfsProgramExplorerDialog(currentNode.path)
-                }
-            }
-
-            batchRow.addView(btnBatchMove, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
-            batchRow.addView(btnBatchCopy, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
-            batchRow.addView(btnBatchDelete, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f))
-            layout.addView(batchRow)
-        }
+        layout.addView(batchRow)
 
         // Scrollable GridView / RecyclerView (3 Columns)
         val recyclerView = androidx.recyclerview.widget.RecyclerView(this).apply {
             layoutManager = androidx.recyclerview.widget.GridLayoutManager(this@LauncherActivity, 3)
             setPadding(4, 4, 4, 4)
         }
-
-        var adapter: VfsGridAdapter? = null
 
         adapter = VfsGridAdapter(
             items = displayNodes,
