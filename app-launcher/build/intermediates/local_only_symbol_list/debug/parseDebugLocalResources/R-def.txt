@@ -28,10 +28,13 @@ drawable ic_cat_unsorted
 drawable ic_dock_anchor_paperclip
 drawable ic_launcher
 id btn_close_settings
-id btn_color_amber
-id btn_color_cyan
-id btn_color_ice
-id btn_color_violet
+id btn_pick_accent_color
+id btn_pick_attention_color
+id btn_pick_graphic_color
+id btn_pick_high_color
+id btn_pick_low_color
+id btn_pick_med_color
+id btn_pick_text_color
 id btn_reset_defaults
 id btn_size_28
 id btn_size_40
@@ -50,7 +53,6 @@ id rv_dock_bottom
 id rv_dock_bottom_left
 id rv_dock_top_right
 id tile_container
-id tv_current_accent_color
 id tv_current_icon_size
 id tv_running_header
 id tv_tile_icon

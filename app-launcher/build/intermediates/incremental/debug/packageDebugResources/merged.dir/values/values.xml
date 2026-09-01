@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="amber_accent">#FFB74D</color>
+    <color name="bg_dark">#0F131D</color>
+    <color name="cyan_accent">#00E5FF</color>
+    <color name="glass_panel_bg">#221A2234</color>
+    <color name="glass_panel_border">#44768396</color>
+    <color name="green_accent">#81C784</color>
+    <color name="text_primary">#F0F4F8</color>
+    <color name="text_secondary">#94A3B8</color>
+    <string name="app_name">Step Launcher</string>
+    <style name="Theme.StepLauncher" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/cyan_accent</item>
+        <item name="colorSecondary">@color/amber_accent</item>
+        <item name="android:windowShowWallpaper">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+    </style>
+</resources>

@@ -1,5 +1,6 @@
 package com.steplauncher.app
 
+import android.graphics.Color
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -16,22 +17,109 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         updateIconSizeLabel()
-        updateAccentColorLabel()
+        updateColorLabels()
 
         binding.btnCloseSettings.setOnClickListener {
             finish()
         }
 
         binding.btnSize28.setOnClickListener { setIconSize(28) }
-        binding.btnSize40.setOnClickListener { setIconSize(40) }
-        binding.btnSize56.setOnClickListener { setIconSize(56) }
-        binding.btnSize72.setOnClickListener { setIconSize(72) }
+        binding.btnSize40.setOnClickListener { setIconSize(38) }
+        binding.btnSize56.setOnClickListener { setIconSize(48) }
+        binding.btnSize72.setOnClickListener { setIconSize(64) }
 
-        binding.btnColorIce.setOnClickListener { setAccentColor("#FFFFFF", "❄️ Frosted Ice") }
-        binding.btnColorCyan.setOnClickListener { setAccentColor("#00E5FF", "💎 Cyan Glass") }
-        binding.btnColorViolet.setOnClickListener { setAccentColor("#AB47BC", "💜 Amethyst Violet") }
-        binding.btnColorAmber.setOnClickListener { setAccentColor("#FFAB00", "🧡 Amber Gold") }
+        // 1. Tile Background Accent Color
+        binding.btnPickAccentColor.setOnClickListener {
+            ColorPickerDialogHelper.show(
+                context = this,
+                title = "🎨 Choose Tile Background Accent Color",
+                initialColorHex = DockManager.accentColorHex
+            ) { hex ->
+                DockManager.updateThemeColors(accentHex = hex, context = this)
+                updateColorLabels()
+                Toast.makeText(this, "Tile Background Accent set to $hex", Toast.LENGTH_SHORT).show()
+            }
+        }
 
+        // 2. Text Accent Color
+        binding.btnPickTextColor.setOnClickListener {
+            ColorPickerDialogHelper.show(
+                context = this,
+                title = "✍️ Choose Text Accent Color",
+                initialColorHex = DockManager.textColorHex
+            ) { hex ->
+                DockManager.updateThemeColors(textHex = hex, context = this)
+                updateColorLabels()
+                Toast.makeText(this, "Text Accent set to $hex", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // 3. Image Accent Color
+        binding.btnPickGraphicColor.setOnClickListener {
+            ColorPickerDialogHelper.show(
+                context = this,
+                title = "🖼️ Choose Image Accent Color",
+                initialColorHex = DockManager.graphicColorHex
+            ) { hex ->
+                DockManager.updateThemeColors(graphicHex = hex, context = this)
+                updateColorLabels()
+                Toast.makeText(this, "Image Accent set to $hex", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // 4. Attention Alert Color
+        binding.btnPickAttentionColor.setOnClickListener {
+            ColorPickerDialogHelper.show(
+                context = this,
+                title = "🚨 Choose Attention Alert Color",
+                initialColorHex = DockManager.attentionColorHex
+            ) { hex ->
+                DockManager.updateThemeColors(attentionHex = hex, context = this)
+                updateColorLabels()
+                Toast.makeText(this, "Attention Alert set to $hex", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // 5. High Threshold Alert Color
+        binding.btnPickHighColor.setOnClickListener {
+            ColorPickerDialogHelper.show(
+                context = this,
+                title = "🔴 Choose High Threshold Alert Color",
+                initialColorHex = DockManager.colorHighHex
+            ) { hex ->
+                DockManager.updateThemeColors(highHex = hex, context = this)
+                updateColorLabels()
+                Toast.makeText(this, "High Threshold Color set to $hex", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // 6. Medium Threshold Color
+        binding.btnPickMedColor.setOnClickListener {
+            ColorPickerDialogHelper.show(
+                context = this,
+                title = "🟡 Choose Medium Threshold Color",
+                initialColorHex = DockManager.colorMedHex
+            ) { hex ->
+                DockManager.updateThemeColors(medHex = hex, context = this)
+                updateColorLabels()
+                Toast.makeText(this, "Medium Threshold Color set to $hex", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // 7. Low Threshold Normal Color
+        binding.btnPickLowColor.setOnClickListener {
+            ColorPickerDialogHelper.show(
+                context = this,
+                title = "🟢 Choose Low Threshold Normal Color",
+                initialColorHex = DockManager.colorLowHex
+            ) { hex ->
+                DockManager.updateThemeColors(lowHex = hex, context = this)
+                updateColorLabels()
+                Toast.makeText(this, "Low Threshold Color set to $hex", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Quick Preset Themes
         binding.btnThemeCyber.setOnClickListener {
             setThemePalette(
                 textHex = "#FFFFFF",
@@ -68,8 +156,8 @@ class SettingsActivity : AppCompatActivity() {
         binding.btnResetDefaults.setOnClickListener {
             DockManager.resetDocksToDefaults(this)
             updateIconSizeLabel()
-            updateAccentColorLabel()
-            Toast.makeText(this, "Dock layouts reset to default!", Toast.LENGTH_SHORT).show()
+            updateColorLabels()
+            Toast.makeText(this, "Dock layouts & theme reset to default!", Toast.LENGTH_SHORT).show()
             finish()
         }
     }
@@ -78,12 +166,6 @@ class SettingsActivity : AppCompatActivity() {
         DockManager.updateIconSize(sizeDp, this)
         updateIconSizeLabel()
         Toast.makeText(this, "Icon size set to ${sizeDp}dp!", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun setAccentColor(hex: String, label: String) {
-        DockManager.updateThemeColors(accentHex = hex, context = this)
-        updateAccentColorLabel()
-        Toast.makeText(this, "Tile background tint set to $label!", Toast.LENGTH_SHORT).show()
     }
 
     private fun setThemePalette(
@@ -102,22 +184,34 @@ class SettingsActivity : AppCompatActivity() {
             lowHex = lowHex,
             context = this
         )
+        updateColorLabels()
         Toast.makeText(this, "Theme palette updated to $label!", Toast.LENGTH_SHORT).show()
     }
 
     private fun updateIconSizeLabel() {
         val currentSize = DockManager.tileIconSizeDp
-        binding.tvCurrentIconSize.text = "Current Icon Size: ${currentSize}dp${if (currentSize == 56) " (Default 2x Large)" else ""}"
+        binding.tvCurrentIconSize.text = "Current Icon Size: ${currentSize}dp"
     }
 
-    private fun updateAccentColorLabel() {
-        val hex = DockManager.accentColorHex
-        val label = when (hex) {
-            "#00E5FF" -> "💎 Cyan Glass (#00E5FF)"
-            "#AB47BC" -> "💜 Amethyst Violet (#AB47BC)"
-            "#FFAB00" -> "🧡 Amber Gold (#FFAB00)"
-            else -> "❄️ Frosted Ice (#FFFFFF)"
-        }
-        binding.tvCurrentAccentColor.text = "Current Tint: $label"
+    private fun updateColorLabels() {
+        binding.btnPickAccentColor.text = "🎨 Tile Background Accent: ${DockManager.accentColorHex}"
+
+        binding.btnPickTextColor.text = "✍️ Text Accent Color: ${DockManager.textColorHex}"
+        try { binding.btnPickTextColor.setTextColor(Color.parseColor(DockManager.textColorHex)) } catch (e: Exception) {}
+
+        binding.btnPickGraphicColor.text = "🖼️ Image Accent Color: ${DockManager.graphicColorHex}"
+        try { binding.btnPickGraphicColor.setTextColor(Color.parseColor(DockManager.graphicColorHex)) } catch (e: Exception) {}
+
+        binding.btnPickAttentionColor.text = "🚨 Attention Alert Tint: ${DockManager.attentionColorHex}"
+        try { binding.btnPickAttentionColor.setTextColor(Color.parseColor(DockManager.attentionColorHex)) } catch (e: Exception) {}
+
+        binding.btnPickHighColor.text = "🔴 High Threshold Alert Color: ${DockManager.colorHighHex}"
+        try { binding.btnPickHighColor.setTextColor(Color.parseColor(DockManager.colorHighHex)) } catch (e: Exception) {}
+
+        binding.btnPickMedColor.text = "🟡 Medium Threshold Color: ${DockManager.colorMedHex}"
+        try { binding.btnPickMedColor.setTextColor(Color.parseColor(DockManager.colorMedHex)) } catch (e: Exception) {}
+
+        binding.btnPickLowColor.text = "🟢 Low Threshold Normal Color: ${DockManager.colorLowHex}"
+        try { binding.btnPickLowColor.setTextColor(Color.parseColor(DockManager.colorLowHex)) } catch (e: Exception) {}
     }
 }

@@ -95,6 +95,19 @@ class DockTileAdapter(
             holder.tvIcon.textSize = dynamicIconPx / density * 0.55f
         }
 
+        // Apply Tile Background Accent Color & Attention Color
+        val tileBgHex = if (tile.isAttentionRequested) DockManager.attentionColorHex else DockManager.accentColorHex
+        if (!tileBgHex.isNullOrEmpty() && tileBgHex != "#FFFFFF") {
+            try {
+                val colorInt = Color.parseColor(tileBgHex)
+                holder.itemView.background?.mutate()?.setTint(colorInt)
+            } catch (e: Exception) {
+                holder.itemView.background?.mutate()?.clearColorFilter()
+            }
+        } else {
+            holder.itemView.background?.mutate()?.clearColorFilter()
+        }
+
         // Try loading real application icon from PackageManager for App Shortcuts & Running Tasks
         val pkgName = when (tile) {
             is DockTile.AppShortcut -> tile.packageName
@@ -138,6 +151,7 @@ class DockTileAdapter(
                 holder.ivAppIcon.setImageDrawable(appDrawable)
                 holder.ivAppIcon.visibility = View.VISIBLE
                 holder.tvIcon.visibility = View.GONE
+                holder.ivAppIcon.clearColorFilter()
             } else {
                 val resId = holder.itemView.context.resources.getIdentifier(customIconUri, "drawable", holder.itemView.context.packageName)
                 if (resId != 0) {
@@ -153,10 +167,24 @@ class DockTileAdapter(
                     holder.ivAppIcon.visibility = View.VISIBLE
                     holder.tvIcon.visibility = View.GONE
                 }
+
+                // Apply Image Accent Color (graphicColorHex) to built-in vector drawables
+                if (!DockManager.graphicColorHex.isNullOrEmpty() && DockManager.graphicColorHex != "#FFFFFF") {
+                    try {
+                        val graphicColorInt = Color.parseColor(DockManager.graphicColorHex)
+                        holder.ivAppIcon.setColorFilter(graphicColorInt)
+                    } catch (e: Exception) {
+                        holder.ivAppIcon.clearColorFilter()
+                    }
+                } else {
+                    holder.ivAppIcon.clearColorFilter()
+                }
             }
+        } else {
+            holder.ivAppIcon.clearColorFilter()
         }
 
-        // Apply Text Accent Color
+        // Apply Text Accent Color (textColorHex)
         val textHex = DockManager.textColorHex
         if (!textHex.isNullOrEmpty()) {
             try {

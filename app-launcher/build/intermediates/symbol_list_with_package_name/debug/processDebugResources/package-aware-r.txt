@@ -3200,10 +3200,13 @@ id bounceBoth
 id bounceEnd
 id bounceStart
 id btn_close_settings
-id btn_color_amber
-id btn_color_cyan
-id btn_color_ice
-id btn_color_violet
+id btn_pick_accent_color
+id btn_pick_attention_color
+id btn_pick_graphic_color
+id btn_pick_high_color
+id btn_pick_low_color
+id btn_pick_med_color
+id btn_pick_text_color
 id btn_reset_defaults
 id btn_size_28
 id btn_size_40
@@ -3599,7 +3602,6 @@ id transition_position
 id transition_scene_layoutid_cache
 id transition_transform
 id triangle
-id tv_current_accent_color
 id tv_current_icon_size
 id tv_running_header
 id tv_tile_icon

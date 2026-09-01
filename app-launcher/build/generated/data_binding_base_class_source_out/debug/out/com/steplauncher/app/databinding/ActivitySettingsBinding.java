@@ -24,16 +24,25 @@ public final class ActivitySettingsBinding implements ViewBinding {
   public final MaterialButton btnCloseSettings;
 
   @NonNull
-  public final MaterialButton btnColorAmber;
+  public final MaterialButton btnPickAccentColor;
 
   @NonNull
-  public final MaterialButton btnColorCyan;
+  public final MaterialButton btnPickAttentionColor;
 
   @NonNull
-  public final MaterialButton btnColorIce;
+  public final MaterialButton btnPickGraphicColor;
 
   @NonNull
-  public final MaterialButton btnColorViolet;
+  public final MaterialButton btnPickHighColor;
+
+  @NonNull
+  public final MaterialButton btnPickLowColor;
+
+  @NonNull
+  public final MaterialButton btnPickMedColor;
+
+  @NonNull
+  public final MaterialButton btnPickTextColor;
 
   @NonNull
   public final MaterialButton btnResetDefaults;
@@ -60,26 +69,27 @@ public final class ActivitySettingsBinding implements ViewBinding {
   public final MaterialButton btnThemeSunset;
 
   @NonNull
-  public final TextView tvCurrentAccentColor;
-
-  @NonNull
   public final TextView tvCurrentIconSize;
 
   private ActivitySettingsBinding(@NonNull LinearLayout rootView,
-      @NonNull MaterialButton btnCloseSettings, @NonNull MaterialButton btnColorAmber,
-      @NonNull MaterialButton btnColorCyan, @NonNull MaterialButton btnColorIce,
-      @NonNull MaterialButton btnColorViolet, @NonNull MaterialButton btnResetDefaults,
-      @NonNull MaterialButton btnSize28, @NonNull MaterialButton btnSize40,
-      @NonNull MaterialButton btnSize56, @NonNull MaterialButton btnSize72,
-      @NonNull MaterialButton btnThemeCyber, @NonNull MaterialButton btnThemeMatrix,
-      @NonNull MaterialButton btnThemeSunset, @NonNull TextView tvCurrentAccentColor,
+      @NonNull MaterialButton btnCloseSettings, @NonNull MaterialButton btnPickAccentColor,
+      @NonNull MaterialButton btnPickAttentionColor, @NonNull MaterialButton btnPickGraphicColor,
+      @NonNull MaterialButton btnPickHighColor, @NonNull MaterialButton btnPickLowColor,
+      @NonNull MaterialButton btnPickMedColor, @NonNull MaterialButton btnPickTextColor,
+      @NonNull MaterialButton btnResetDefaults, @NonNull MaterialButton btnSize28,
+      @NonNull MaterialButton btnSize40, @NonNull MaterialButton btnSize56,
+      @NonNull MaterialButton btnSize72, @NonNull MaterialButton btnThemeCyber,
+      @NonNull MaterialButton btnThemeMatrix, @NonNull MaterialButton btnThemeSunset,
       @NonNull TextView tvCurrentIconSize) {
     this.rootView = rootView;
     this.btnCloseSettings = btnCloseSettings;
-    this.btnColorAmber = btnColorAmber;
-    this.btnColorCyan = btnColorCyan;
-    this.btnColorIce = btnColorIce;
-    this.btnColorViolet = btnColorViolet;
+    this.btnPickAccentColor = btnPickAccentColor;
+    this.btnPickAttentionColor = btnPickAttentionColor;
+    this.btnPickGraphicColor = btnPickGraphicColor;
+    this.btnPickHighColor = btnPickHighColor;
+    this.btnPickLowColor = btnPickLowColor;
+    this.btnPickMedColor = btnPickMedColor;
+    this.btnPickTextColor = btnPickTextColor;
     this.btnResetDefaults = btnResetDefaults;
     this.btnSize28 = btnSize28;
     this.btnSize40 = btnSize40;
@@ -88,7 +98,6 @@ public final class ActivitySettingsBinding implements ViewBinding {
     this.btnThemeCyber = btnThemeCyber;
     this.btnThemeMatrix = btnThemeMatrix;
     this.btnThemeSunset = btnThemeSunset;
-    this.tvCurrentAccentColor = tvCurrentAccentColor;
     this.tvCurrentIconSize = tvCurrentIconSize;
   }
 
@@ -125,27 +134,45 @@ public final class ActivitySettingsBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.btn_color_amber;
-      MaterialButton btnColorAmber = ViewBindings.findChildViewById(rootView, id);
-      if (btnColorAmber == null) {
+      id = R.id.btn_pick_accent_color;
+      MaterialButton btnPickAccentColor = ViewBindings.findChildViewById(rootView, id);
+      if (btnPickAccentColor == null) {
         break missingId;
       }
 
-      id = R.id.btn_color_cyan;
-      MaterialButton btnColorCyan = ViewBindings.findChildViewById(rootView, id);
-      if (btnColorCyan == null) {
+      id = R.id.btn_pick_attention_color;
+      MaterialButton btnPickAttentionColor = ViewBindings.findChildViewById(rootView, id);
+      if (btnPickAttentionColor == null) {
         break missingId;
       }
 
-      id = R.id.btn_color_ice;
-      MaterialButton btnColorIce = ViewBindings.findChildViewById(rootView, id);
-      if (btnColorIce == null) {
+      id = R.id.btn_pick_graphic_color;
+      MaterialButton btnPickGraphicColor = ViewBindings.findChildViewById(rootView, id);
+      if (btnPickGraphicColor == null) {
         break missingId;
       }
 
-      id = R.id.btn_color_violet;
-      MaterialButton btnColorViolet = ViewBindings.findChildViewById(rootView, id);
-      if (btnColorViolet == null) {
+      id = R.id.btn_pick_high_color;
+      MaterialButton btnPickHighColor = ViewBindings.findChildViewById(rootView, id);
+      if (btnPickHighColor == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_pick_low_color;
+      MaterialButton btnPickLowColor = ViewBindings.findChildViewById(rootView, id);
+      if (btnPickLowColor == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_pick_med_color;
+      MaterialButton btnPickMedColor = ViewBindings.findChildViewById(rootView, id);
+      if (btnPickMedColor == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_pick_text_color;
+      MaterialButton btnPickTextColor = ViewBindings.findChildViewById(rootView, id);
+      if (btnPickTextColor == null) {
         break missingId;
       }
 
@@ -197,21 +224,16 @@ public final class ActivitySettingsBinding implements ViewBinding {
         break missingId;
       }
 
-      id = R.id.tv_current_accent_color;
-      TextView tvCurrentAccentColor = ViewBindings.findChildViewById(rootView, id);
-      if (tvCurrentAccentColor == null) {
-        break missingId;
-      }
-
       id = R.id.tv_current_icon_size;
       TextView tvCurrentIconSize = ViewBindings.findChildViewById(rootView, id);
       if (tvCurrentIconSize == null) {
         break missingId;
       }
 
-      return new ActivitySettingsBinding((LinearLayout) rootView, btnCloseSettings, btnColorAmber,
-          btnColorCyan, btnColorIce, btnColorViolet, btnResetDefaults, btnSize28, btnSize40,
-          btnSize56, btnSize72, btnThemeCyber, btnThemeMatrix, btnThemeSunset, tvCurrentAccentColor,
+      return new ActivitySettingsBinding((LinearLayout) rootView, btnCloseSettings,
+          btnPickAccentColor, btnPickAttentionColor, btnPickGraphicColor, btnPickHighColor,
+          btnPickLowColor, btnPickMedColor, btnPickTextColor, btnResetDefaults, btnSize28,
+          btnSize40, btnSize56, btnSize72, btnThemeCyber, btnThemeMatrix, btnThemeSunset,
           tvCurrentIconSize);
     }
     String missingId = rootView.getResources().getResourceName(id);

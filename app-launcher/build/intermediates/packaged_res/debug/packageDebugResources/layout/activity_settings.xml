@@ -18,7 +18,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="⚙️ Dock Configuration"
+            android:text="⚙️ Dock &amp; Theme Configuration"
             android:textColor="#FFFFFF"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -36,7 +36,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Configure icon dimensions, text accent, graphic colors, and telemetry threshold alerts."
+        android:text="Customize tile accent tint, text accent, image graphic colors, attention alerts, and telemetry thresholds using RGB/HSV color pickers."
         android:textColor="@color/text_secondary"
         android:textSize="12sp" />
 
@@ -73,7 +73,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Current Icon Size: 56dp (Default 2x Large)"
+                    android:text="Current Icon Size: 38dp"
                     android:textColor="@color/text_secondary"
                     android:textSize="11sp" />
 
@@ -101,7 +101,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
-                        android:text="40dp"
+                        android:text="38dp"
                         android:textSize="10sp"
                         android:textColor="#FFFFFF"
                         app:strokeColor="@color/cyan_accent" />
@@ -113,7 +113,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
-                        android:text="56dp (2x)"
+                        android:text="48dp"
                         android:textSize="10sp"
                         android:textColor="#FFFFFF"
                         app:strokeColor="@color/cyan_accent" />
@@ -125,7 +125,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="4dp"
-                        android:text="72dp"
+                        android:text="64dp"
                         android:textSize="10sp"
                         android:textColor="#FFFFFF"
                         app:strokeColor="@color/cyan_accent" />
@@ -133,7 +133,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Section 2: Frosted Glass Tint Accent Color -->
+            <!-- Section 2: RGB / HSV Color Customization -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -145,77 +145,62 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="🎨 Tile Background Tint"
+                    android:text="🎨 Theme Accent Colors (RGB/HSV Pickers)"
                     android:textColor="@color/amber_accent"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tv_current_accent_color"
+                <!-- 1. Background Accent Color -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_pick_accent_color"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Current Tint: ❄️ Frosted Ice (#FFFFFF)"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
+                    android:layout_marginTop="8dp"
+                    android:text="🎨 Tile Background Accent: #FFFFFF"
+                    android:textColor="#FFFFFF"
+                    android:gravity="start|center_vertical"
+                    app:strokeColor="#FFFFFF" />
 
-                <LinearLayout
+                <!-- 2. Text Accent Color -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_pick_text_color"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="12dp">
+                    android:layout_marginTop="6dp"
+                    android:text="✍️ Text Accent Color: #FFFFFF"
+                    android:textColor="#FFFFFF"
+                    android:gravity="start|center_vertical"
+                    app:strokeColor="#FFFFFF" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_color_ice"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="❄️ Ice"
-                        android:textSize="9sp"
-                        android:textColor="#FFFFFF"
-                        app:strokeColor="#FFFFFF" />
+                <!-- 3. Image Accent Color -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_pick_graphic_color"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="🖼️ Image / Vector Accent Color: #00E5FF"
+                    android:textColor="#00E5FF"
+                    android:gravity="start|center_vertical"
+                    app:strokeColor="#00E5FF" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_color_cyan"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="4dp"
-                        android:text="💎 Cyan"
-                        android:textSize="9sp"
-                        android:textColor="#00E5FF"
-                        app:strokeColor="#00E5FF" />
+                <!-- 4. Attention Alert Color -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_pick_attention_color"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="🚨 Attention Alert Tint: #FF3D00"
+                    android:textColor="#FF3D00"
+                    android:gravity="start|center_vertical"
+                    app:strokeColor="#FF3D00" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_color_violet"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="4dp"
-                        android:text="💜 Violet"
-                        android:textSize="9sp"
-                        android:textColor="#AB47BC"
-                        app:strokeColor="#AB47BC" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_color_amber"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="4dp"
-                        android:text="🧡 Amber"
-                        android:textSize="9sp"
-                        android:textColor="#FFAB00"
-                        app:strokeColor="#FFAB00" />
-
-                </LinearLayout>
             </LinearLayout>
 
-            <!-- Section 3: Text Accent & Graphic Palette -->
+            <!-- Section 3: Telemetry Threshold Colors -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -227,8 +212,63 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="✏️ Text Accent &amp; Graphic Palette"
+                    android:text="📊 Telemetry &amp; Meter Threshold Colors"
                     android:textColor="#00E5FF"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <!-- High Threshold Color -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_pick_high_color"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="🔴 High Threshold Alert Color: #FF5252"
+                    android:textColor="#FF5252"
+                    android:gravity="start|center_vertical"
+                    app:strokeColor="#FF5252" />
+
+                <!-- Medium Threshold Color -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_pick_med_color"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="🟡 Medium Threshold Color: #FFD700"
+                    android:textColor="#FFD700"
+                    android:gravity="start|center_vertical"
+                    app:strokeColor="#FFD700" />
+
+                <!-- Low Threshold Color -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_pick_low_color"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="🟢 Low Threshold Normal Color: #00E676"
+                    android:textColor="#00E676"
+                    android:gravity="start|center_vertical"
+                    app:strokeColor="#00E676" />
+
+            </LinearLayout>
+
+            <!-- Section 4: Quick Preset Palettes -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_glass_center_canvas"
+                android:padding="16dp"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="⚡ Quick Preset Theme Palettes"
+                    android:textColor="#FFFFFF"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
@@ -276,7 +316,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Section 4: Reset Defaults -->
+            <!-- Section 5: Reset Defaults -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_reset_defaults"
                 android:layout_width="match_parent"
